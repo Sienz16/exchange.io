@@ -1,9 +1,23 @@
-import build from '@hono/vite-build/cloudflare-workers'
 import tailwindcss from '@tailwindcss/vite'
 import honox from 'honox/vite'
 import client from 'honox/vite/client'
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig } from 'vite'
 import path from 'node:path'
+
+// Deployment target: 'bun' (default), 'node', or 'cloudflare-workers'.
+// Override per build with DEPLOY_TARGET — e.g. for Cloudflare Workers:
+//   DEPLOY_TARGET=cloudflare-workers vite build
+const deployTarget = process.env.DEPLOY_TARGET ?? 'bun'
+
+const adapters = {
+  'bun': () => import('@hono/vite-build/bun').then((m) => m.default({ staticRoot: './dist' })),
+  'node': () => import('@hono/vite-build/node').then((m) => m.default({ staticRoot: './dist' })),
+  'cloudflare-workers': () => import('@hono/vite-build/cloudflare-workers').then((m) => m.default()),
+} as const
+
+if (!(deployTarget in adapters)) {
+  throw new Error(`Unknown DEPLOY_TARGET "${deployTarget}". Use one of: ${Object.keys(adapters).join(', ')}`)
+}
 
 const common = {
   resolve: {
@@ -13,7 +27,7 @@ const common = {
   }
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(async ({ mode }) => {
   if (mode === 'client') {
     return {
       ...common,
@@ -32,23 +46,20 @@ export default defineConfig(({ mode }) => {
       }
     }
   }
-  // Vite's SSR module runner does not expose process.env to app modules, so
-  // inject the runtime env vars the server reads (DATABASE_URL etc.) here.
-  // Client build deliberately omits this block — no secrets reach the browser.
-  const env = loadEnv(mode, process.cwd(), '')
+  // Runtime configuration (DATABASE_URL, DAILY_RATE_BASE) is always read from
+  // the real process environment at runtime — never inlined into the bundle.
+  // Bun loads .env automatically in development; in production supply real
+  // env vars (VPS) or Workers secrets (wrangler secret put DATABASE_URL).
+  const buildPlugin = await adapters[deployTarget as keyof typeof adapters]()
   return {
     ...common,
     ssr: { external: ['react', 'react-dom'] },
-    define: {
-      'process.env.DATABASE_URL': JSON.stringify(env.DATABASE_URL ?? ''),
-      'process.env.DAILY_RATE_BASE': JSON.stringify(env.DAILY_RATE_BASE ?? 'USD'),
-    },
     plugins: [
       honox({
         client: { input: ['/app/client.ts', '/app/style.css'] }
       }),
       tailwindcss(),
-      build()
+      buildPlugin
     ]
   }
 })

@@ -1,0 +1,4 @@
+# Copy to .dev.vars (gitignored) for local `wrangler dev` runs.
+# In production set the secret with: wrangler secret put DATABASE_URL
+DATABASE_URL=postgres://localhost:5432/exchange_io
+DAILY_RATE_BASE=USD

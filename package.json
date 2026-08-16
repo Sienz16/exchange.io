@@ -1,11 +1,15 @@
 {
-  "name": "basic",
+  "name": "exchange-io",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build --mode client && vite build",
-    "preview": "wrangler dev",
-    "deploy": "bun run build && wrangler deploy"
+    "start": "bun dist/index.js",
+    "build:worker": "vite build --mode client && DEPLOY_TARGET=cloudflare-workers vite build",
+    "preview:worker": "bun run build:worker && wrangler dev",
+    "deploy:worker": "bun run build:worker && wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "check": "bun run scripts/self-check.ts && bun run scripts/forecast-self-check.ts && bun run scripts/task-4-self-check.ts && bun run scripts/task-5-self-check.ts && bun run scripts/api-self-check.ts"
   },
   "private": true,
   "dependencies": {

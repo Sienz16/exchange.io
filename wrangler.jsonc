@@ -6,32 +6,15 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  // Daily refresh at 00:30 UTC, after open.er-api.com publishes its ~00:00 UTC update.
+  // The handler is the `scheduled` export in app/server.ts.
+  "triggers": {
+    "crons": ["30 0 * * *"]
+  },
   "assets": {
     "directory": "./dist"
   }
-  // "vars": {
-  //   "MY_VAR": "my-variable"
-  // },
-  // "kv_namespaces": [
-  //   {
-  //     "binding": "MY_KV_NAMESPACE",
-  //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  //   }
-  // ],
-  // "r2_buckets": [
-  //   {
-  //     "binding": "MY_BUCKET",
-  //     "bucket_name": "my-bucket"
-  //   }
-  // ],
-  // "d1_databases": [
-  //   {
-  //     "binding": "MY_DB",
-  //     "database_name": "my-database",
-  //     "database_id": ""
-  //   }
-  // ],
-  // "ai": {
-  //   "binding": "AI"
-  // }
+  // Production secrets (never commit these):
+  //   wrangler secret put DATABASE_URL
+  // Local `wrangler dev` reads them from .dev.vars (see .dev.vars.example).
 }
