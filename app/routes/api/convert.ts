@@ -22,14 +22,7 @@ export default createRoute(async (c) => {
         details: { date: query.date },
       }, 422)
     }
-    if (query.date) {
-      return apiError(c, {
-        error: 'historical_unavailable',
-        message: 'Dated conversion is unavailable until historical data is enabled',
-        details: { date: query.date },
-      }, 422)
-    }
-    return json(c, await convert({ from: query.from, to: query.to, amount: query.amount }))
+    return json(c, await convert({ from: query.from, to: query.to, amount: query.amount, date: query.date }))
   } catch (error) {
     if (isFutureQueryError(error)) return apiError(c, {
       error: 'future_date',
