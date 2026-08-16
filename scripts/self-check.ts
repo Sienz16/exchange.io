@@ -6,6 +6,8 @@ import {
   isFutureDate,
   parseQuery,
 } from '../app/lib/validation'
+import { createRateService } from '../app/lib/rates'
+import type { RateSnapshot } from '../app/lib/types'
 
 const query = parseQuery(convertQuerySchema, {
   from: 'USD',
@@ -44,5 +46,49 @@ assert.throws(() => parseQuery(convertQuerySchema, { from: 'USD', to: 'EUR', amo
 assert.throws(() => parseQuery(forecastQuerySchema, { from: 'USD', to: 'EUR', horizon: 31 }))
 assert.throws(() => parseQuery(forecastQuerySchema, { from: 'USD', to: 'EUR', horizon: true }))
 assert.throws(() => parseQuery(historicalQuerySchema, { date: '2026-02-30', base: 'USD' }))
+
+const snapshots: Record<string, RateSnapshot> = {
+  USD: {
+    base: 'USD',
+    rates: { USD: 1, EUR: 0.8, JPY: 160 },
+    rate_date: '2026-08-16',
+    source: 'self-check',
+    fetched_at: '2026-08-16T00:00:00.000Z',
+  },
+}
+let fetches = 0
+const rates = createRateService(async (base) => {
+  fetches += 1
+  const snapshot = snapshots[base]
+  if (!snapshot) throw new Error('source unavailable')
+  return snapshot
+}, () => new Date('2026-08-16T00:30:00.000Z'))
+
+const converted = await rates.convert({ from: 'USD', to: 'EUR', amount: 10 })
+assert.equal(converted.result, 8)
+assert.equal(converted.rate, 0.8)
+assert.equal(converted.rate_date, '2026-08-16')
+assert.equal(converted.source, 'self-check')
+assert.equal(fetches, 1)
+
+const sameCurrency = await rates.convert({ from: 'USD', to: 'USD', amount: 10 })
+assert.equal(sameCurrency.result, 10)
+assert.equal(sameCurrency.rate, 1)
+assert.equal(fetches, 1)
+
+const stale = createRateService(async () => {
+  throw new Error('refresh failed')
+}, () => new Date('2026-08-16T02:01:00.000Z'))
+await assert.rejects(() => stale.getLatest('USD'))
+let staleNow = new Date('2026-08-16T00:00:00.000Z')
+let failRefresh = false
+const staleSource = createRateService(async () => {
+  if (failRefresh) throw new Error('refresh failed')
+  return snapshots.USD
+}, () => staleNow)
+const fresh = await staleSource.getLatest('USD')
+staleNow = new Date('2026-08-16T01:01:00.000Z')
+failRefresh = true
+assert.deepEqual(await staleSource.getLatest('USD'), fresh)
 
 console.log('self-check passed')
