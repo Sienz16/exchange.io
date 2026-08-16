@@ -4,6 +4,9 @@ dist/
 # dev
 .hono/
 .wrangler/
+.superpowers/
+.cache/
+coverage/
 .yarn/
 !.yarn/releases
 .vscode/*

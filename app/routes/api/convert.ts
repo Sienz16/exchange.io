@@ -29,6 +29,7 @@ export default createRoute(async (c) => {
       message: 'Date cannot be in the future',
       details: error.details,
     }, 422)
+    if (isHistoricalUnavailableError(error)) return apiError(c, error, 503)
     if (isFutureDateError(error)) return apiError(c, error, 422)
     if (isApiError(error)) return apiError(c, error)
     return unknownError(c, error)
@@ -39,6 +40,10 @@ export const OPTIONS = createRoute((c) => options(c))
 
 function isFutureDateError(error: unknown): error is { error: 'future_date'; message: string; details: unknown } {
   return typeof error === 'object' && error !== null && 'error' in error && error.error === 'future_date'
+}
+
+function isHistoricalUnavailableError(error: unknown): error is { error: 'historical_unavailable'; message: string; details: unknown } {
+  return typeof error === 'object' && error !== null && 'error' in error && error.error === 'historical_unavailable'
 }
 
 function isFutureDate(value: string): boolean {

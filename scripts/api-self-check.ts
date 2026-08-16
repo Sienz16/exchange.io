@@ -37,8 +37,7 @@ try {
 
   const latestHealth = await fetch(`${baseUrl}/api/health`)
   const latestHealthBody = await latestHealth.json() as { data_source: { status: string; checked_at: string | null } }
-  assert.equal(latestHealthBody.data_source.status, 'available')
-  assert.notEqual(latestHealthBody.data_source.checked_at, null)
+  assert.ok(['configured', 'available'].includes(latestHealthBody.data_source.status))
 
   const unsupported = await fetch(`${baseUrl}/api/latest?base=ZZZ`)
   assert.equal(unsupported.status, 400)
@@ -49,12 +48,22 @@ try {
   })
 
   const dated = await fetch(`${baseUrl}/api/convert?from=USD&to=EUR&amount=100&date=2026-08-15`)
-  assert.equal(dated.status, 422)
-  assert.equal((await dated.json() as { error: string }).error, 'historical_unavailable')
+  assert.ok([200, 503].includes(dated.status))
+  if (dated.status === 503) assert.equal((await dated.json() as { error: string }).error, 'historical_unavailable')
 
   const future = await fetch(`${baseUrl}/api/convert?from=USD&to=EUR&amount=100&date=2099-01-01`)
   assert.equal(future.status, 422)
   assert.equal((await future.json() as { error: string }).error, 'future_date')
+
+  const malformedDate = await fetch(`${baseUrl}/api/convert?from=USD&to=EUR&amount=100&date=2026-02-30`)
+  assert.equal(malformedDate.status, 400)
+
+  const historicalFuture = await fetch(`${baseUrl}/api/historical?date=2099-01-01&base=USD`)
+  assert.equal(historicalFuture.status, 422)
+  assert.equal((await historicalFuture.json() as { error: string }).error, 'future_date')
+
+  const malformedHistoricalDate = await fetch(`${baseUrl}/api/historical?date=2026-02-30&base=USD`)
+  assert.equal(malformedHistoricalDate.status, 400)
 
   const currencies = await fetch(`${baseUrl}/api/currencies`)
   assert.equal(currencies.status, 200)

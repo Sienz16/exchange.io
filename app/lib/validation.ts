@@ -27,11 +27,11 @@ export const convertQuerySchema = z.object({
   from: currencySchema,
   to: currencySchema,
   amount: positiveAmountSchema,
-  date: isoDateSchema.refine((value) => !isFutureDate(value), 'Date cannot be in the future').optional(),
+  date: isoDateSchema.optional(),
 })
 
 export const historicalQuerySchema = z.object({
-  date: isoDateSchema.refine((value) => !isFutureDate(value), 'Date cannot be in the future'),
+  date: isoDateSchema,
   base: currencySchema.default('USD'),
 })
 

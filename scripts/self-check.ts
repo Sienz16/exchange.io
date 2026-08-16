@@ -29,19 +29,6 @@ assert.throws(
 assert.equal(isFutureDate('2099-01-01', new Date('2026-08-16T12:00:00Z')), true)
 assert.equal(isFutureDate('2026-08-16', new Date('2026-08-16T12:00:00Z')), false)
 
-for (const query of [
-  { from: 'USD', to: 'EUR', amount: 100, date: '2099-01-01' },
-  { date: '2099-01-01', base: 'USD' },
-]) {
-  assert.throws(
-    () => parseQuery(query.date ? convertQuerySchema : historicalQuerySchema, query),
-    (error: unknown) => {
-      assert.deepEqual(Object.keys(error as object).sort(), ['details', 'error', 'message'])
-      return true
-    },
-  )
-}
-
 assert.throws(() => parseQuery(convertQuerySchema, { from: 'USD', to: 'EUR', amount: 0 }))
 assert.throws(() => parseQuery(convertQuerySchema, { from: 'USD', to: 'EUR', amount: true }))
 assert.throws(() => parseQuery(forecastQuerySchema, { from: 'USD', to: 'EUR', horizon: 31 }))
@@ -63,7 +50,7 @@ const rates = createRateService(async (base) => {
   const snapshot = snapshots[base]
   if (!snapshot) throw new Error('source unavailable')
   return snapshot
-}, () => new Date('2026-08-16T00:30:00.000Z'))
+}, () => new Date('2026-08-16T00:30:00.000Z'), null)
 
 const converted = await rates.convert({ from: 'USD', to: 'EUR', amount: 10 })
 assert.equal(converted.result, 8)
@@ -79,14 +66,14 @@ assert.equal(fetches, 1)
 
 const stale = createRateService(async () => {
   throw new Error('refresh failed')
-}, () => new Date('2026-08-16T02:01:00.000Z'))
+}, () => new Date('2026-08-16T02:01:00.000Z'), null)
 await assert.rejects(() => stale.getLatest('USD'))
 let staleNow = new Date('2026-08-16T00:00:00.000Z')
 let failRefresh = false
 const staleSource = createRateService(async () => {
   if (failRefresh) throw new Error('refresh failed')
   return snapshots.USD
-}, () => staleNow)
+}, () => staleNow, null)
 const fresh = await staleSource.getLatest('USD')
 staleNow = new Date('2026-08-16T01:01:00.000Z')
 failRefresh = true
@@ -98,7 +85,7 @@ const replacementSnapshots = [
   { ...snapshots.USD, fetched_at: '2026-08-16T00:00:00.000Z' },
   { ...snapshots.USD, rates: { USD: 1, EUR: 0.9, JPY: 160 }, fetched_at: '2026-08-16T01:00:00.000Z' },
 ]
-const replacementService = createRateService(async () => replacementSnapshots[replacementFetches++], () => replacementNow)
+const replacementService = createRateService(async () => replacementSnapshots[replacementFetches++], () => replacementNow, null)
 await replacementService.getLatest(' usd ')
 replacementNow = new Date('2026-08-16T00:59:59.999Z')
 assert.equal((await replacementService.getLatest('USD')).rates.EUR, 0.8)
