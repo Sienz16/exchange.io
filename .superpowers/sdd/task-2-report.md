@@ -15,6 +15,16 @@ Implemented Task 2: rate source adapter, in-memory cache, latest lookup, and lat
 - `bun run scripts/self-check.ts`: PASS, output `self-check passed`.
 - `bunx tsc --noEmit`: PASS.
 - `bunx vite build`: PASS.
+
+## Reviewer Fix: Own-Property Validation
+
+- Base-rate validation now uses `Object.hasOwn(value, base)`, preventing inherited currency-like properties from satisfying required base-rate presence.
+- Self-check adds an inherited `Object.prototype.USD` regression case and restores the prototype afterward.
+
+## Own-Property Fix Tests
+
+- `bun run scripts/self-check.ts`: PASS, output `self-check passed`.
+- `bunx tsc --noEmit`: PASS.
 - `git diff --check`: PASS.
 
 ## Concerns

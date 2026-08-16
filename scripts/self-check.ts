@@ -120,6 +120,14 @@ await assert.rejects(() => runSourceCheck(async () => sourceResponse({
 await assert.rejects(() => runSourceCheck(async () => sourceResponse({
   result: 'success', base_code: 'USD', time_last_update_utc: 'Sun, 16 Aug 2026 00:00:00 GMT', rates: { USD: Number.NaN },
 })), /invalid response/)
+Object.defineProperty(Object.prototype, 'USD', { value: 1, configurable: true })
+try {
+  await assert.rejects(() => runSourceCheck(async () => sourceResponse({
+    result: 'success', base_code: 'USD', time_last_update_utc: 'Sun, 16 Aug 2026 00:00:00 GMT', rates: { EUR: 0.8 },
+  })), /invalid response/)
+} finally {
+  Reflect.deleteProperty(Object.prototype, 'USD')
+}
 await assert.rejects(() => runSourceCheck(async () => sourceResponse({
   result: 'success', base_code: 'USD', time_last_update_utc: 'not a date', rates: { USD: 1 },
 })), /invalid update time/)
