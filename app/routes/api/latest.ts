@@ -1,25 +1,20 @@
 import { createRoute } from 'honox/factory'
-import { apiError, json, options, unknownError } from '../../lib/api'
+import { apiError, handleApiError, json } from '../../lib/api'
 import { getLatest, isSupportedCurrency } from '../../lib/rates'
 import { latestQuerySchema, parseQuery } from '../../lib/validation'
 
 export default createRoute(async (c) => {
-  if (c.req.method === 'OPTIONS') return options(c)
-
   try {
     const query = parseQuery(latestQuerySchema, c.req.query())
-    if (!isSupportedCurrency(query.base)) return apiError(c, {
-      error: 'unsupported_currency',
-      message: 'Currency is not supported by the rate source',
-      details: { currency: query.base },
-    })
+    if (!isSupportedCurrency(query.base)) {
+      return apiError(c, {
+        error: 'unsupported_currency',
+        message: 'Currency is not supported by the rate source',
+        details: { currency: query.base },
+      })
+    }
     return json(c, await getLatest(query.base))
   } catch (error) {
-    if (isApiError(error)) return apiError(c, error)
-    return unknownError(c, error)
+    return handleApiError(c, error)
   }
 })
-
-function isApiError(error: unknown): error is { error: string; message: string; details: unknown } {
-  return typeof error === 'object' && error !== null && 'error' in error && 'message' in error && 'details' in error
-}

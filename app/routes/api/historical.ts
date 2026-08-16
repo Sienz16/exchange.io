@@ -1,38 +1,27 @@
 import { createRoute } from 'honox/factory'
-import { apiError, json, options, unknownError } from '../../lib/api'
+import { apiError, handleApiError, json } from '../../lib/api'
 import { getHistorical, isSupportedCurrency } from '../../lib/rates'
 import { historicalQuerySchema, isFutureDate, parseQuery } from '../../lib/validation'
 
 export default createRoute(async (c) => {
-  if (c.req.method === 'OPTIONS') return options(c)
   try {
     const query = parseQuery(historicalQuerySchema, c.req.query())
-    if (isFutureDate(query.date)) return apiError(c, {
-      error: 'future_date',
-      message: 'Date cannot be in the future',
-      details: { date: query.date },
-    }, 422)
-    if (!isSupportedCurrency(query.base)) return apiError(c, { error: 'unsupported_currency', message: 'Currency is not supported by the rate source', details: { currency: query.base } })
+    if (isFutureDate(query.date)) {
+      return apiError(c, {
+        error: 'future_date',
+        message: 'Date cannot be in the future',
+        details: { date: query.date },
+      }, 422)
+    }
+    if (!isSupportedCurrency(query.base)) {
+      return apiError(c, {
+        error: 'unsupported_currency',
+        message: 'Currency is not supported by the rate source',
+        details: { currency: query.base },
+      })
+    }
     return json(c, await getHistorical(query.date, query.base))
   } catch (error) {
-    if (isFutureQueryError(error)) return apiError(c, error, 422)
-    if (isHistoricalUnavailableError(error)) return apiError(c, error, 503)
-    if (isApiError(error)) return apiError(c, error)
-    return unknownError(c, error)
+    return handleApiError(c, error)
   }
 })
-
-export const OPTIONS = createRoute((c) => options(c))
-
-function isHistoricalUnavailableError(error: unknown): error is { error: 'historical_unavailable'; message: string; details: unknown } {
-  return typeof error === 'object' && error !== null && 'error' in error && error.error === 'historical_unavailable'
-}
-
-function isApiError(error: unknown): error is { error: string; message: string; details: unknown } {
-  return typeof error === 'object' && error !== null && 'error' in error && 'message' in error && 'details' in error
-}
-
-function isFutureQueryError(error: unknown): error is { error: string; message: string; details: unknown } {
-  return isApiError(error) && Array.isArray(error.details) && error.details.some((issue) =>
-    typeof issue === 'object' && issue !== null && 'message' in issue && issue.message === 'Date cannot be in the future')
-}
