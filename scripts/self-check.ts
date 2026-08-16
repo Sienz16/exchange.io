@@ -7,6 +7,7 @@ import {
   parseQuery,
 } from '../app/lib/validation'
 import { createRateService } from '../app/lib/rates'
+import { fetchLatestRates } from '../app/lib/sources/er-api'
 import type { RateSnapshot } from '../app/lib/types'
 
 const query = parseQuery(convertQuerySchema, {
@@ -90,5 +91,41 @@ const fresh = await staleSource.getLatest('USD')
 staleNow = new Date('2026-08-16T01:01:00.000Z')
 failRefresh = true
 assert.deepEqual(await staleSource.getLatest('USD'), fresh)
+
+let replacementFetches = 0
+let replacementNow = new Date('2026-08-16T00:00:00.000Z')
+const replacementSnapshots = [
+  { ...snapshots.USD, fetched_at: '2026-08-16T00:00:00.000Z' },
+  { ...snapshots.USD, rates: { USD: 1, EUR: 0.9, JPY: 160 }, fetched_at: '2026-08-16T01:00:00.000Z' },
+]
+const replacementService = createRateService(async () => replacementSnapshots[replacementFetches++], () => replacementNow)
+await replacementService.getLatest(' usd ')
+replacementNow = new Date('2026-08-16T00:59:59.999Z')
+assert.equal((await replacementService.getLatest('USD')).rates.EUR, 0.8)
+replacementNow = new Date('2026-08-16T01:00:00.000Z')
+assert.equal((await replacementService.getLatest('USD')).rates.EUR, 0.9)
+assert.equal(replacementFetches, 2)
+
+const sourceResponse = (body: unknown, ok = true, status = 200) => ({
+  ok,
+  status,
+  json: async () => body,
+}) as Response
+const runSourceCheck = (fetchImpl: typeof fetch) => fetchLatestRates(' usd ', fetchImpl)
+
+await assert.rejects(() => runSourceCheck(async () => sourceResponse({}, false, 503)), /HTTP 503/)
+await assert.rejects(() => runSourceCheck(async () => sourceResponse({
+  result: 'success', base_code: 'USD', time_last_update_utc: 'Sun, 16 Aug 2026 00:00:00 GMT', rates: {},
+})), /invalid response/)
+await assert.rejects(() => runSourceCheck(async () => sourceResponse({
+  result: 'success', base_code: 'USD', time_last_update_utc: 'Sun, 16 Aug 2026 00:00:00 GMT', rates: { USD: Number.NaN },
+})), /invalid response/)
+await assert.rejects(() => runSourceCheck(async () => sourceResponse({
+  result: 'success', base_code: 'USD', time_last_update_utc: 'not a date', rates: { USD: 1 },
+})), /invalid update time/)
+
+await assert.rejects(() => fetchLatestRates('USD', async (_input, init) => new Promise((_resolve, reject) => {
+  init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+}), 1), /Aborted/)
 
 console.log('self-check passed')
