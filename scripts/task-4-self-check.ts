@@ -24,7 +24,8 @@ const service = createRateService(
     getHistorical: async (date, base) => date === '2024-01-08' && base === 'USD' ? {
       base: 'USD', rates: { USD: 1, EUR: 0.91 }, rate_date: '2024-01-05', source: 'db', fetched_at: '2024-01-08T00:00:00Z',
     } : null,
-    upsertRates: async () => { throw new Error('db write failed') },
+     upsertRates: async () => { throw new Error('db write failed') },
+    recordRateUpdate: async () => {},
   },
 )
 assert.equal((await service.getHistorical('2024-01-08', 'USD')).rate_date, '2024-01-05')

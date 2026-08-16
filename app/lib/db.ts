@@ -6,7 +6,10 @@ export type RateDatabase = {
   getLatest(base: string): Promise<RateSnapshot | null>
   getHistorical(date: string, base: string): Promise<RateSnapshot | null>
   upsertRates(rows: RateRow[]): Promise<void>
+  recordRateUpdate(update: RateUpdate): Promise<void>
 }
+
+export type RateUpdate = { fetched_at: string; source: string; status: 'success' | 'error'; error_text: string | null }
 
 type Sql = ReturnType<typeof postgres>
 
@@ -41,6 +44,9 @@ export function createRateDatabase(sql: Sql): RateDatabase {
           await transaction`INSERT INTO daily_rates (date, base, currency, rate, source, fetched_at) VALUES ${transaction(chunk.map((row) => [row.date, row.base, row.currency, row.rate, row.source, row.fetched_at]))} ON CONFLICT (date, base, currency) DO UPDATE SET rate = EXCLUDED.rate, source = EXCLUDED.source, fetched_at = EXCLUDED.fetched_at`
         }
       })
+    },
+    async recordRateUpdate(update) {
+      await sql`INSERT INTO rate_updates (fetched_at, source, status, error_text) VALUES (${update.fetched_at}, ${update.source}, ${update.status}, ${update.error_text})`
     },
   }
 }
