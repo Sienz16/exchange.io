@@ -29,3 +29,21 @@ Implemented Postgres persistence, ECB historical seeding, historical lookup, and
 - Historical route returns `503 historical_unavailable` when DB is not configured or has no matching data. Dated conversion returns the shared `503` service error in that case.
 - `rate_updates` schema exists, but ingestion currently does not record refresh status rows.
 - `bun run build` retains the Task 3 client-mode build blocker.
+
+## Reviewer Fix
+
+- Historical SQL now resolves `max(date)` inside the query, then selects only that date's rows.
+- DB upsert failures now propagate instead of being silently swallowed; cache is updated only after persistence succeeds.
+- Historical cache fallback is exact-date only. Missing historical data returns stable `{ error: 'historical_unavailable', message, details }`.
+- ECB parsing rejects empty/no-rate input and accepts one explicit import timestamp for all rows.
+- Added uppercase three-letter currency and allowed-status CHECK constraints.
+- Upserts use transactional chunks of 500 rows with multi-row INSERT statements.
+
+## Reviewer Verification
+
+- `bun run scripts/task-4-self-check.ts`: PASS, output `task 4 self-check passed`.
+- Focused checks cover dated conversion and actual prior `rate_date`, DB persistence failure propagation, exact-date cache behavior, stable historical error shape, unsupported-currency error shape, ECB empty/malformed rejection, and shared import timestamp.
+- `bunx tsc --noEmit`: PASS.
+- `bunx vite build`: PASS.
+
+No live Postgres tests claimed or run.

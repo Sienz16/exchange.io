@@ -23,22 +23,22 @@ function snapshot(rows: RateRow[]): RateSnapshot | null {
 }
 
 export function createRateDatabase(sql: Sql): RateDatabase {
-  async function find(query: string, base: string, date?: string): Promise<RateSnapshot | null> {
+  async function find(base: string, date?: string): Promise<RateSnapshot | null> {
     const rows = date
-      ? await sql`SELECT date::text, base, currency, rate::float8, source, fetched_at::text FROM daily_rates WHERE base = ${base} AND date <= ${date} ORDER BY date DESC`
+      ? await sql`SELECT date::text, base, currency, rate::float8, source, fetched_at::text FROM daily_rates WHERE base = ${base} AND date = (SELECT max(date) FROM daily_rates WHERE base = ${base} AND date <= ${date})`
       : await sql`SELECT date::text, base, currency, rate::float8, source, fetched_at::text FROM daily_rates WHERE base = ${base} AND date = (SELECT max(date) FROM daily_rates WHERE base = ${base})`
-    const actualDate = rows[0]?.date
-    return snapshot(rows.filter((row) => row.date === actualDate) as RateRow[])
+    return snapshot(rows as unknown as RateRow[])
   }
 
   return {
-    getLatest: (base) => find('latest', base),
-    getHistorical: (date, base) => find('historical', base, date),
+    getLatest: (base) => find(base),
+    getHistorical: (date, base) => find(base, date),
     async upsertRates(rows) {
       if (!rows.length) return
       await sql.begin(async (transaction) => {
-        for (const row of rows) {
-          await transaction`INSERT INTO daily_rates (date, base, currency, rate, source, fetched_at) VALUES (${row.date}, ${row.base}, ${row.currency}, ${row.rate}, ${row.source}, ${row.fetched_at}) ON CONFLICT (date, base, currency) DO UPDATE SET rate = EXCLUDED.rate, source = EXCLUDED.source, fetched_at = EXCLUDED.fetched_at`
+        for (let index = 0; index < rows.length; index += 500) {
+          const chunk = rows.slice(index, index + 500)
+          await transaction`INSERT INTO daily_rates (date, base, currency, rate, source, fetched_at) VALUES ${transaction(chunk.map((row) => [row.date, row.base, row.currency, row.rate, row.source, row.fetched_at]))} ON CONFLICT (date, base, currency) DO UPDATE SET rate = EXCLUDED.rate, source = EXCLUDED.source, fetched_at = EXCLUDED.fetched_at`
         }
       })
     },

@@ -8,6 +8,7 @@ type Clock = () => Date
 type LatestConversionInput = { from: string; to: string; amount: number; date?: string }
 type RateServiceStatus = 'configured' | 'available' | 'degraded' | 'unavailable'
 type Database = ReturnType<typeof getDatabase>
+export const historicalUnavailableError = (date: string, base: string) => ({ error: 'historical_unavailable', message: 'Historical rate is unavailable', details: { date, base } })
 
 const supportedCurrencies = new Set('AED AFN ALL AMD ANG AOA ARS AUD AWG AZN BAM BBD BDT BGN BHD BIF BMD BND BOB BRL BSD BTN BWP BYN BZD CAD CDF CHF CLF CLP CNH CNY COP CRC CUP CVE CZK DJF DKK DOP DZD EGP ERN ETB EUR FJD FKP FOK GBP GEL GGP GHS GIP GMD GNF GTQ GYD HKD HNL HRK HTG HUF IDR ILS IMP INR IQD IRR ISK JEP JMD JOD JPY KES KGS KHR KID KMF KRW KWD KYD KZT LAK LBP LKR LRD LSL LYD MAD MDL MGA MKD MMK MNT MOP MRU MUR MVR MWK MXN MYR MZN NAD NGN NIO NOK NPR NZD OMR PAB PEN PGK PHP PKR PLN PYG QAR RON RSD RUB RWF SAR SBD SCR SDG SEK SGD SHP SLE SLL SOS SRD SSP STN SYP SZL THB TJS TMT TND TOP TRY TTD TVD TWD TZS UAH UGX USD UYU UZS VES VND VUV WST XAF XCD XCG XDR XOF XPF YER ZAR ZMW ZWG ZWL'.split(' '))
 
@@ -29,19 +30,20 @@ export function createRateService(source: Source = fetchLatestRates, clock: Cloc
   async function getLatest(base: string): Promise<RateResult> {
     const key = normalizeBase(base)
     if (!isSupportedCurrency(key)) throw new Error(`Unsupported currency: ${key}`)
+    if (database) {
+      const stored = await database.getLatest(key)
+      if (stored) {
+        cache.set(key, stored)
+        return stored
+      }
+    }
     const cached = cache.get(key)
     const now = clock()
     if (cached && now.getTime() - new Date(cached.fetched_at).getTime() < CACHE_TTL_MS) return cached
 
+    let snapshot: RateSnapshot
     try {
-      const snapshot = await source(key)
-      cache.set(key, snapshot)
-      if (database) await database.upsertRates(Object.entries(snapshot.rates).map(([currency, rate]) => ({
-        date: snapshot.rate_date, base: snapshot.base, currency, rate, source: snapshot.source, fetched_at: snapshot.fetched_at,
-      }))).catch(() => undefined)
-      status = 'available'
-      checkedAt = snapshot.fetched_at
-      return snapshot
+      snapshot = await source(key)
     } catch (error) {
       if (cached) {
         status = 'degraded'
@@ -51,6 +53,13 @@ export function createRateService(source: Source = fetchLatestRates, clock: Cloc
       status = 'unavailable'
       throw error
     }
+    if (database) await database.upsertRates(Object.entries(snapshot.rates).map(([currency, rate]) => ({
+      date: snapshot.rate_date, base: snapshot.base, currency, rate, source: snapshot.source, fetched_at: snapshot.fetched_at,
+    })))
+    cache.set(key, snapshot)
+    status = 'available'
+    checkedAt = snapshot.fetched_at
+    return snapshot
   }
 
   async function getHistorical(date: string, base: string): Promise<RateResult> {
@@ -59,8 +68,8 @@ export function createRateService(source: Source = fetchLatestRates, clock: Cloc
     const stored = database ? await database.getHistorical(date, key) : null
     if (stored) return stored
     const cached = cache.get(key)
-    if (cached && cached.rate_date <= date) return cached
-    throw new Error('Historical rate is unavailable')
+    if (cached && cached.rate_date === date) return cached
+    throw historicalUnavailableError(date, key)
   }
 
   return {
@@ -93,6 +102,7 @@ export function createRateService(source: Source = fetchLatestRates, clock: Cloc
 
 const defaultService = createRateService()
 export const getLatest = defaultService.getLatest
+export const getHistorical = defaultService.getHistorical
 export const convert = defaultService.convert
 export const isSupportedCurrency = defaultService.isSupportedCurrency
 export const getRateServiceStatus = defaultService.getStatus
