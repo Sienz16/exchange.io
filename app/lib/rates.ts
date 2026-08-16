@@ -27,28 +27,34 @@ export function createRateService(source: Source = fetchLatestRates, clock: Cloc
     return supportedCurrencies.has(currency.trim().toUpperCase())
   }
 
+  function isFresh(snapshot: RateSnapshot | null | undefined, now: Date): boolean {
+    return snapshot != null && now.getTime() - new Date(snapshot.fetched_at).getTime() < CACHE_TTL_MS
+  }
+
   async function getLatest(base: string): Promise<RateResult> {
     const key = normalizeBase(base)
     if (!isSupportedCurrency(key)) throw new Error(`Unsupported currency: ${key}`)
-    if (database) {
-      const stored = await database.getLatest(key)
-      if (stored) {
-        cache.set(key, stored)
-        return stored
-      }
-    }
-    const cached = cache.get(key)
     const now = clock()
-    if (cached && now.getTime() - new Date(cached.fetched_at).getTime() < CACHE_TTL_MS) return cached
+    if (isFresh(cache.get(key), now)) return cache.get(key) as RateSnapshot
+
+    // Stored rows are only served while fresh; a stale row means the daily
+    // job missed a refresh, so the live source rehydrates and upserts here.
+    const stored = database ? await database.getLatest(key) : null
+    if (isFresh(stored, now)) {
+      cache.set(key, stored as RateSnapshot)
+      return stored as RateSnapshot
+    }
 
     let snapshot: RateSnapshot
     try {
       snapshot = await source(key)
     } catch (error) {
-      if (cached) {
+      // Prefer stale-but-usable data over a failed source response.
+      const fallback = stored ?? cache.get(key)
+      if (fallback) {
         status = 'degraded'
-        checkedAt = cached.fetched_at
-        return cached
+        checkedAt = fallback.fetched_at
+        return fallback
       }
       status = 'unavailable'
       throw error
@@ -77,7 +83,7 @@ export function createRateService(source: Source = fetchLatestRates, clock: Cloc
     getHistorical,
     isSupportedCurrency,
     getStatus: () => ({ status, checked_at: checkedAt }),
-    /** Latest-only conversion. Historical/date conversion belongs to Task 4. */
+    /** Converts at the latest rate, or at `input.date` when a historical date is given. */
     async convert(input: LatestConversionInput): Promise<ConversionResult> {
       const from = normalizeBase(input.from)
       const to = normalizeBase(input.to)

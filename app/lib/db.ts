@@ -1,4 +1,5 @@
 import postgres from 'postgres'
+import { readEnv } from './env'
 import type { RateSnapshot } from './types'
 
 export type RateRow = { date: string; base: string; currency: string; rate: number; source: string; fetched_at: string }
@@ -80,7 +81,10 @@ export function createRateDatabase(sql: Sql): RateDatabase {
         bySource.set(row.date, entry)
       }
       for (const [date, entry] of bySource) {
-        if (entry.fromRate !== undefined && entry.toRate !== undefined) byDate.set(date, entry.toRate / entry.fromRate)
+        // ECB reference rows never list EUR against itself; it is implicitly 1.
+        const fromRate = entry.fromRate ?? (from === 'EUR' ? 1 : undefined)
+        const toRate = entry.toRate ?? (to === 'EUR' ? 1 : undefined)
+        if (fromRate !== undefined && toRate !== undefined) byDate.set(date, toRate / fromRate)
       }
       for (const [date, rate] of byDateExact) byDate.set(date, rate)
       return Array.from(byDate.entries())
@@ -105,7 +109,7 @@ export function createRateDatabase(sql: Sql): RateDatabase {
 let database: RateDatabase | null | undefined
 export function getDatabase(): RateDatabase | null {
   if (database !== undefined) return database
-  const url = typeof process !== 'undefined' ? process.env.DATABASE_URL : undefined
+  const url = readEnv('DATABASE_URL')
   database = url ? createRateDatabase(postgres(url, { max: 1 })) : null
   return database
 }

@@ -89,9 +89,56 @@ const replacementService = createRateService(async () => replacementSnapshots[re
 await replacementService.getLatest(' usd ')
 replacementNow = new Date('2026-08-16T00:59:59.999Z')
 assert.equal((await replacementService.getLatest('USD')).rates.EUR, 0.8)
-replacementNow = new Date('2026-08-16T01:00:00.000Z')
+replacementNow = new Date('2026-08-16T01:00:00Z')
 assert.equal((await replacementService.getLatest('USD')).rates.EUR, 0.9)
 assert.equal(replacementFetches, 2)
+
+// Database-backed freshness: stored rows are served while fresh, refreshed
+// from the source once stale, and still served (degraded) if the source fails.
+class FakeDatabase {
+  stored = new Map<string, RateSnapshot>()
+  upsertCount = 0
+  async getLatest(base: string) { return this.stored.get(base) ?? null }
+  async getHistorical(date: string, base: string) {
+    const snapshot = this.stored.get(base)
+    return snapshot && snapshot.rate_date === date ? snapshot : null
+  }
+  async upsertRates(rows: Array<{ date: string; base: string; currency: string; rate: number; source: string; fetched_at: string }>) {
+    this.upsertCount += 1
+    for (const row of rows) {
+      const snapshot = this.stored.get(row.base) ??
+        { base: row.base, rates: {}, rate_date: row.date, source: row.source, fetched_at: row.fetched_at }
+      snapshot.rates[row.currency] = row.rate
+      this.stored.set(row.base, snapshot)
+    }
+  }
+  async recordRateUpdate() {}
+}
+let dbNow = new Date('2026-08-16T00:00:00Z')
+let dbFetches = 0
+let dbSourceDown = false
+const fakeDb = new FakeDatabase()
+const dbService = createRateService(async () => {
+  dbFetches += 1
+  if (dbSourceDown) throw new Error('refresh failed')
+  return { ...snapshots.USD, rates: { USD: 1, EUR: 0.5 + dbFetches * 0.25, JPY: 160 }, fetched_at: dbNow.toISOString() }
+}, () => dbNow, fakeDb)
+
+await dbService.getLatest('USD') // first call fetches and stores EUR 0.8
+dbNow = new Date('2026-08-16T00:30:00Z')
+assert.equal((await dbService.getLatest('USD')).rates.EUR, 0.75)
+assert.equal(dbFetches, 1) // fresh stored row: no source call
+
+dbNow = new Date('2026-08-16T02:00:00Z')
+assert.equal((await dbService.getLatest('USD')).rates.EUR, 1)
+assert.equal(dbFetches, 2) // stale stored row: refreshed and upserted
+assert.equal(fakeDb.upsertCount, 2)
+
+dbNow = new Date('2026-08-16T04:00:00Z')
+dbSourceDown = true
+assert.equal((await dbService.getLatest('USD')).rates.EUR, 1) // source down: stale-but-usable data wins
+assert.equal(dbService.getStatus().status, 'degraded')
+assert.equal(dbFetches, 3)
 
 const sourceResponse = (body: unknown, ok = true, status = 200) => ({
   ok,

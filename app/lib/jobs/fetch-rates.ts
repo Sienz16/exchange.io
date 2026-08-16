@@ -1,4 +1,5 @@
 import { getDatabase, type RateDatabase, type RateRow } from '../db'
+import { readEnv } from '../env'
 import { fetchLatestRates } from '../sources/er-api'
 import type { RateSnapshot } from '../types'
 
@@ -11,7 +12,7 @@ const DEFAULT_SOURCE = 'open.er-api.com'
 export function createDailyRateFetcher(options: DailyFetchOptions = {}) {
   const source = options.source ?? fetchLatestRates
   const database = options.database === undefined ? getDatabase() : options.database
-  const base = (options.base ?? (typeof process !== 'undefined' ? process.env.DAILY_RATE_BASE : undefined) ?? 'USD').trim().toUpperCase()
+  const base = (options.base ?? readEnv('DAILY_RATE_BASE') ?? 'USD').trim().toUpperCase()
   const clock = options.clock ?? (() => new Date())
 
   return async function run(): Promise<DailyFetchResult> {
