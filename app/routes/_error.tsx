@@ -7,10 +7,19 @@ const handler: ErrorHandler = (e, c) => {
   console.error(e.message)
   c.status(500)
   return c.render(
-    <div className="flex min-h-screen flex-col items-center justify-center gap-2 text-center">
-      <h1 className="text-3xl font-bold">500 — Internal Server Error</h1>
-      <p className="text-muted-foreground">Something went wrong on our end.</p>
-    </div>
+    <main className="flex min-h-screen flex-col items-center justify-center gap-1.5 p-10 text-center">
+      <a className="mb-7 font-display text-[1.12rem] font-bold tracking-[-.05em]" href="/">exchange<span className="text-accent-strong">.io</span></a>
+      <p className="m-0 bg-[image:var(--gradient-accent)] bg-clip-text font-display text-[clamp(5rem,14vw,8.5rem)] leading-none font-bold tracking-[-.04em] tabular-nums text-transparent">500</p>
+      <h1 className="font-display text-[clamp(1.7rem,3.6vw,2.6rem)] font-semibold tracking-[-.02em]">Something broke<br />
+        <em className="bg-[image:var(--gradient-accent)] bg-clip-text pr-[.06em] font-serif font-normal italic tracking-[-.01em] text-transparent">on our side.</em>
+      </h1>
+      <p className="mt-2.5 max-w-[400px] text-muted">An internal error occurred. The API health endpoint shows current service state.</p>
+      <div className="mt-8 flex flex-wrap justify-center gap-3.5">
+        <a className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-[10px] border border-line2 px-6 font-mono text-[.74rem] font-semibold uppercase tracking-[.1em] text-fg transition-colors hover:border-accent-strong hover:text-accent-strong" href="/api/health">Check /api/health</a>
+        <a className="inline-flex min-h-12 items-center justify-center gap-2.5 rounded-[10px] bg-accent px-6 font-mono text-[.74rem] font-semibold uppercase tracking-[.1em] text-on-accent transition-all hover:-translate-y-0.5" href="/">Back home <span aria-hidden="true">→</span></a>
+      </div>
+    </main>,
+    { title: '500 — exchange.io' },
   )
 }
 
