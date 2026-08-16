@@ -2,9 +2,11 @@ import postgres from 'postgres'
 import type { RateSnapshot } from './types'
 
 export type RateRow = { date: string; base: string; currency: string; rate: number; source: string; fetched_at: string }
+export type PairRateRow = { date: string; rate: number }
 export type RateDatabase = {
   getLatest(base: string): Promise<RateSnapshot | null>
   getHistorical(date: string, base: string): Promise<RateSnapshot | null>
+  getPairHistory?(from: string, to: string): Promise<PairRateRow[]>
   upsertRates(rows: RateRow[]): Promise<void>
   recordRateUpdate(update: RateUpdate): Promise<void>
 }
@@ -36,6 +38,10 @@ export function createRateDatabase(sql: Sql): RateDatabase {
   return {
     getLatest: (base) => find(base),
     getHistorical: (date, base) => find(base, date),
+    async getPairHistory(from, to) {
+      const rows = await sql`SELECT date::text, rate::float8 FROM daily_rates WHERE base = ${from} AND currency = ${to} ORDER BY date ASC`
+      return rows as unknown as PairRateRow[]
+    },
     async upsertRates(rows) {
       if (!rows.length) return
       await sql.begin(async (transaction) => {
