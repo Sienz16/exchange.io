@@ -52,7 +52,7 @@
 
 - [ ] Implement `fetchLatestRates(base: string): Promise<RateSnapshot>` against `https://open.er-api.com/v6/latest/{base}` with timeout and response-shape validation.
 - [ ] Implement in-memory 60-minute cache keyed by uppercase base currency.
-- [ ] Implement `getLatest(base)` and `convert({ from, to, amount, date? })` using `amount * (toRate / fromRate)` and return source, fetched time, and actual `rate_date`.
+- [ ] Implement latest-only `getLatest(base)` and `convert({ from, to, amount })` using `amount * (toRate / fromRate)` and return source, fetched time, and actual `rate_date`; Task 4 adds dated conversion through Postgres.
 - [ ] Keep failed refreshes from deleting the last cached successful snapshot.
 - [ ] Add self-check for cross-rate math and same-currency conversion.
 - [ ] Run typecheck and self-check.
@@ -63,7 +63,7 @@
 
 - [ ] Add `GET /api/health` returning service status, UTC time, and data-source status.
 - [ ] Add `GET /api/latest?base=USD`, defaulting to USD, with validation and JSON metadata.
-- [ ] Add `GET /api/convert?from=USD&to=EUR&amount=100&date=YYYY-MM-DD` with 400/422 stable errors.
+- [ ] Add latest-only `GET /api/convert?from=USD&to=EUR&amount=100` with 400 stable errors; reject any `date` query with stable `422 historical_unavailable` until Task 4.
 - [ ] Add `GET /api/currencies` from the source-supported currency list, including decimal metadata for JPY and other zero-decimal currencies.
 - [ ] Add CORS headers and `OPTIONS` handling through shared helper.
 - [ ] Run dev server and verify health, latest, convert, invalid amount, and future date with `curl`.

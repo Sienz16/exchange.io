@@ -30,7 +30,14 @@ Implemented API vertical slice: health, latest, latest-only convert, currencies,
 
 ## Concerns
 
-- HonoX dev server owns automatic preflight handling and replaces custom `OPTIONS` responses with its built-in CORS response. GET API responses include required `Access-Control-Allow-*` headers; preflight status works but its header set is framework-default.
+- HonoX dev server owns automatic preflight handling. OPTIONS returns `204` with framework-default `Access-Control-Allow-Methods` including `GET`; GET API responses include the shared wildcard CORS headers. Custom preflight header values are not preserved by current dev adapter.
 - Currency support is derived from the latest USD source snapshot. Persistent/source-normalized currency metadata belongs with later DB work.
 - Dated conversion is intentionally rejected with `422`; Task 4 adds historical lookup.
 - `bun run build` remains blocked by the existing client-mode build failure with no diagnostic output, as recorded in Task 2.
+
+## Reviewer Fix
+
+- Added source-supported currency validation at HTTP boundaries. Unknown codes return `400 unsupported_currency` with stable error body instead of triggering a source request and returning `503`.
+- Added focused HTTP self-check at `scripts/api-self-check.ts` covering status/body, GET CORS, OPTIONS status/CORS methods, latest, unsupported currency, dated/future conversion behavior, health state transitions, and JPY decimals.
+- Health no longer performs a network request. It reports `configured` before first lookup, `available` after a successful snapshot, `degraded` when serving stale cache after refresh failure, and `unavailable` after an uncached failure, with `checked_at` metadata.
+- Clarified Task 3 brief and plan: conversion is latest-only; date support belongs to Task 4 and currently returns `422 historical_unavailable`.

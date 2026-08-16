@@ -5,6 +5,9 @@ const CACHE_TTL_MS = 60 * 60 * 1000
 type Source = (base: string) => Promise<RateSnapshot>
 type Clock = () => Date
 type LatestConversionInput = { from: string; to: string; amount: number }
+type RateServiceStatus = 'configured' | 'available' | 'degraded' | 'unavailable'
+
+const supportedCurrencies = new Set('AED AFN ALL AMD ANG AOA ARS AUD AWG AZN BAM BBD BDT BGN BHD BIF BMD BND BOB BRL BSD BTN BWP BYN BZD CAD CDF CHF CLF CLP CNH CNY COP CRC CUP CVE CZK DJF DKK DOP DZD EGP ERN ETB EUR FJD FKP FOK GBP GEL GGP GHS GIP GMD GNF GTQ GYD HKD HNL HRK HTG HUF IDR ILS IMP INR IQD IRR ISK JEP JMD JOD JPY KES KGS KHR KID KMF KRW KWD KYD KZT LAK LBP LKR LRD LSL LYD MAD MDL MGA MKD MMK MNT MOP MRU MUR MVR MWK MXN MYR MZN NAD NGN NIO NOK NPR NZD OMR PAB PEN PGK PHP PKR PLN PYG QAR RON RSD RUB RWF SAR SBD SCR SDG SEK SGD SHP SLE SLL SOS SRD SSP STN SYP SZL THB TJS TMT TND TOP TRY TTD TVD TWD TZS UAH UGX USD UYU UZS VES VND VUV WST XAF XCD XCG XDR XOF XPF YER ZAR ZMW ZWG ZWL'.split(' '))
 
 function normalizeBase(base: string): string {
   const normalized = base.trim().toUpperCase()
@@ -14,9 +17,16 @@ function normalizeBase(base: string): string {
 
 export function createRateService(source: Source = fetchLatestRates, clock: Clock = () => new Date()) {
   const cache = new Map<string, RateSnapshot>()
+  let status: RateServiceStatus = 'configured'
+  let checkedAt: string | null = null
+
+  function isSupportedCurrency(currency: string): boolean {
+    return supportedCurrencies.has(currency.trim().toUpperCase())
+  }
 
   async function getLatest(base: string): Promise<RateResult> {
     const key = normalizeBase(base)
+    if (!isSupportedCurrency(key)) throw new Error(`Unsupported currency: ${key}`)
     const cached = cache.get(key)
     const now = clock()
     if (cached && now.getTime() - new Date(cached.fetched_at).getTime() < CACHE_TTL_MS) return cached
@@ -24,15 +34,24 @@ export function createRateService(source: Source = fetchLatestRates, clock: Cloc
     try {
       const snapshot = await source(key)
       cache.set(key, snapshot)
+      status = 'available'
+      checkedAt = snapshot.fetched_at
       return snapshot
     } catch (error) {
-      if (cached) return cached
+      if (cached) {
+        status = 'degraded'
+        checkedAt = cached.fetched_at
+        return cached
+      }
+      status = 'unavailable'
       throw error
     }
   }
 
   return {
     getLatest,
+    isSupportedCurrency,
+    getStatus: () => ({ status, checked_at: checkedAt }),
     /** Latest-only conversion. Historical/date conversion belongs to Task 4. */
     async convert(input: LatestConversionInput): Promise<ConversionResult> {
       const from = normalizeBase(input.from)
@@ -59,3 +78,5 @@ export function createRateService(source: Source = fetchLatestRates, clock: Cloc
 const defaultService = createRateService()
 export const getLatest = defaultService.getLatest
 export const convert = defaultService.convert
+export const isSupportedCurrency = defaultService.isSupportedCurrency
+export const getRateServiceStatus = defaultService.getStatus

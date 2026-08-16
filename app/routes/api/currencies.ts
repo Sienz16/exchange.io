@@ -19,5 +19,3 @@ export default createRoute(async (c) => {
     return unknownError(c, error)
   }
 })
-
-export const OPTIONS = createRoute((c) => options(c))

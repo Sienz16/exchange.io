@@ -1,6 +1,6 @@
 import { createRoute } from 'honox/factory'
 import { apiError, json, options, unknownError } from '../../lib/api'
-import { convert } from '../../lib/rates'
+import { convert, isSupportedCurrency } from '../../lib/rates'
 import { convertQuerySchema, parseQuery } from '../../lib/validation'
 
 export default createRoute(async (c) => {
@@ -8,6 +8,20 @@ export default createRoute(async (c) => {
 
   try {
     const query = parseQuery(convertQuerySchema, c.req.query())
+    for (const currency of [query.from, query.to]) {
+      if (!isSupportedCurrency(currency)) return apiError(c, {
+        error: 'unsupported_currency',
+        message: 'Currency is not supported by the rate source',
+        details: { currency },
+      })
+    }
+    if (query.date && isFutureDate(query.date)) {
+      return apiError(c, {
+        error: 'future_date',
+        message: 'Date cannot be in the future',
+        details: { date: query.date },
+      }, 422)
+    }
     if (query.date) {
       return apiError(c, {
         error: 'historical_unavailable',
@@ -32,6 +46,13 @@ export const OPTIONS = createRoute((c) => options(c))
 
 function isFutureDateError(error: unknown): error is { error: 'future_date'; message: string; details: unknown } {
   return typeof error === 'object' && error !== null && 'error' in error && error.error === 'future_date'
+}
+
+function isFutureDate(value: string): boolean {
+  const date = new Date(`${value}T00:00:00Z`)
+  const today = new Date()
+  today.setUTCHours(0, 0, 0, 0)
+  return date > today
 }
 
 function isFutureQueryError(error: unknown): error is { details: Array<{ message?: string }> } {
