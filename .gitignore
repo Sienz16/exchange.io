@@ -5,6 +5,7 @@ dist/
 .hono/
 .wrangler/
 .superpowers/
+docs/superpowers/
 .cache/
 coverage/
 .yarn/
