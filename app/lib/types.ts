@@ -8,13 +8,7 @@ export type RateSnapshot = {
   fetched_at: string
 }
 
-export type RateResult = {
-  base: CurrencyCode
-  rates: Record<CurrencyCode, number>
-  rate_date: string
-  source: string
-  fetched_at: string
-}
+export type RateResult = RateSnapshot
 
 export type ConversionResult = {
   from: CurrencyCode

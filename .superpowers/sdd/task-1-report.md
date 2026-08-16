@@ -22,3 +22,28 @@ Implemented Task 1: Domain Types and Validation.
 - `bun run build` remains blocked by the existing client-mode Vite build configuration. No Task 1 file appears in the reported failure.
 - No test runner exists in `package.json`; the required domain checks use the requested Bun self-check script instead of a test framework.
 - Currency support is syntax-only in Task 1. Supported-currency enforcement belongs to later source/service work.
+
+## Review Fix
+
+- Future dates now reject in convert and historical query validation with stable `{ error, message, details }` errors.
+- Amount and horizon schemas accept numeric strings but reject unsafe coercions such as booleans and empty strings.
+- `RateResult` reuses `RateSnapshot` to remove duplicate structure.
+- Self-check now asserts stable error keys for future-date failures and rejects unsafe numeric inputs.
+
+## Review Fix Tests
+
+Command: `bun run scripts/self-check.ts`
+
+Exact output:
+
+```text
+self-check passed
+```
+
+Command: `bunx tsc --noEmit`
+
+Exact output:
+
+```text
+(no output; exit code 0)
+```

@@ -11,8 +11,13 @@ export const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must 
   'Date must be a valid calendar date',
 )
 
-export const positiveAmountSchema = z.coerce.number().finite().positive()
-export const forecastHorizonSchema = z.coerce.number().int().min(1).max(30)
+const preprocessNumber = <T extends z.ZodType>(schema: T) => z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() !== '' ? Number(value) : value),
+  schema,
+)
+
+export const positiveAmountSchema = preprocessNumber(z.number().finite().positive())
+export const forecastHorizonSchema = preprocessNumber(z.number().finite().int().min(1).max(30))
 
 export const latestQuerySchema = z.object({
   base: currencySchema.default('USD'),
@@ -22,11 +27,11 @@ export const convertQuerySchema = z.object({
   from: currencySchema,
   to: currencySchema,
   amount: positiveAmountSchema,
-  date: isoDateSchema.optional(),
+  date: isoDateSchema.refine((value) => !isFutureDate(value), 'Date cannot be in the future').optional(),
 })
 
 export const historicalQuerySchema = z.object({
-  date: isoDateSchema,
+  date: isoDateSchema.refine((value) => !isFutureDate(value), 'Date cannot be in the future'),
   base: currencySchema.default('USD'),
 })
 
