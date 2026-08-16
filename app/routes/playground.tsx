@@ -1,4 +1,5 @@
 import { createRoute } from 'honox/factory'
+import { requestOrigin } from '../lib/origin'
 import Playground from '../islands/playground'
 
 export default createRoute((c) => c.render(
@@ -12,7 +13,7 @@ export default createRoute((c) => c.render(
       <h1>Make the query.<br /><em>Read the record.</em></h1>
       <p>Test a conversion against the current daily reference snapshot. Every response includes enough metadata to reproduce it.</p>
     </section>
-    <Playground />
+    <Playground origin={requestOrigin(c)} />
   </main>,
    { title: 'Playground — exchange.io', description: 'Test exchange.io currency conversions against the latest reference snapshot.' },
 ))

@@ -1,6 +1,5 @@
 import { createRoute } from 'honox/factory'
-
-const request = `curl "https://exchange.io/api/convert?from=USD&to=EUR&amount=100"`
+import { requestOrigin } from '../lib/origin'
 
 export default createRoute((c) => c.render(
   <main className="landing-page">
@@ -79,7 +78,7 @@ export default createRoute((c) => c.render(
       <div className="section-label"><span>04</span> API PREVIEW / ONE REQUEST</div>
       <div className="code-preview">
         <div className="code-heading"><span>GET /api/convert</span><span>200 OK</span></div>
-        <pre><code>{request}</code></pre>
+        <pre><code>{`curl "${requestOrigin(c)}/api/convert?from=USD&to=EUR&amount=100"`}</code></pre>
         <p>Built for scripts, prototypes, and products that prefer transparent inputs.</p>
         <a className="text-link" href="/docs">Explore every endpoint <span aria-hidden="true">→</span></a>
       </div>

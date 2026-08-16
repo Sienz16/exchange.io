@@ -8,7 +8,7 @@ type Conversion = {
 
 const fallbackCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'INR', 'SGD', 'VND']
 
-export default function Playground({ compact = false }: { compact?: boolean }) {
+export default function Playground({ compact = false, origin = '' }: { compact?: boolean; origin?: string }) {
   const [amount, setAmount] = useState('100')
   const [from, setFrom] = useState('USD')
   const [to, setTo] = useState('EUR')
@@ -23,7 +23,8 @@ export default function Playground({ compact = false }: { compact?: boolean }) {
       if (body.currencies?.length) setCurrencies(body.currencies.map(({ code }) => code))
     }).catch(() => undefined)
   }, [])
-  const curl = `curl "${typeof window === 'undefined' ? 'https://exchange.io' : window.location.origin}/api/convert?from=${from}&to=${to}&amount=${amount || '0'}"`
+  const siteOrigin = origin || (typeof window === 'undefined' ? '' : window.location.origin)
+  const curl = `curl "${siteOrigin}/api/convert?from=${from}&to=${to}&amount=${amount || '0'}"`
 
   async function convert() {
     setBusy(true); setError('')

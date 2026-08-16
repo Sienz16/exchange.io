@@ -1,5 +1,5 @@
-@import 'tailwindcss';
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
 
 :root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #17191c; background: #f5f2eb; --ink: #17191c; --muted: #686963; --rule: #d4d0c6; --blue: #1748c7; --lime: #b9d64a; }
 * { box-sizing: border-box; }
