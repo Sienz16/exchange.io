@@ -7,7 +7,7 @@ const HasIslands: FC<PropsWithChildren> = ({ children }) => {
   return <>{c.get(IMPORTING_ISLANDS_ID) ? children : <></>}</>
 }
 
-export default reactRenderer(({ children, title }) => {
+export default reactRenderer(({ children, title, description }) => {
   return (
     <html lang="en">
       <head>
@@ -27,6 +27,10 @@ export default reactRenderer(({ children, title }) => {
           </>
         )}
         {title ? <title>{title}</title> : ''}
+        {description ? <meta name="description" content={description} /> : ''}
+        {title ? <meta property="og:title" content={title} /> : ''}
+        {description ? <meta property="og:description" content={description} /> : ''}
+        <meta property="og:type" content="website" />
       </head>
       <body>{children}</body>
     </html>

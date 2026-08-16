@@ -9,7 +9,7 @@ export default createRoute((c) => c.render(
       <a className="wordmark" href="/">exchange<span>.io</span></a>
       <nav aria-label="Primary navigation">
         <a href="#method">Method</a>
-        <a href="#api">API</a>
+        <a href="/docs">Docs</a>
         <a href="/playground">Playground <span aria-hidden="true">↗</span></a>
       </nav>
     </header>
@@ -60,5 +60,5 @@ export default createRoute((c) => c.render(
       <a href="/playground">Open playground ↗</a>
     </footer>
   </main>,
-  { title: 'exchange.io — Currency data without the fog' },
+   { title: 'exchange.io — Currency data without the fog', description: 'Clean currency exchange rates, history, conversion, and forecasts through a small public API.' },
 ))

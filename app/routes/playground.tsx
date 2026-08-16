@@ -5,7 +5,7 @@ export default createRoute((c) => c.render(
   <main>
     <header className="site-header page-width">
       <a className="wordmark" href="/">exchange<span>.io</span></a>
-      <a className="back-link" href="/">← Back to exchange.io</a>
+      <nav aria-label="Page navigation"><a href="/docs">Docs</a><a className="back-link" href="/">← Back to exchange.io</a></nav>
     </header>
     <section className="playground-header page-width">
       <p className="eyebrow">/ PLAYGROUND</p>
@@ -14,5 +14,5 @@ export default createRoute((c) => c.render(
     </section>
     <Playground />
   </main>,
-  { title: 'Playground — exchange.io' },
+   { title: 'Playground — exchange.io', description: 'Test exchange.io currency conversions against the latest reference snapshot.' },
 ))
