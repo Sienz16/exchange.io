@@ -107,4 +107,46 @@ assert.equal(await verifySessionCookie('garbage', token), false)
 assert.equal(await verifySessionCookie(null, token), false)
 assert.match(clearSessionCookie(), /^admin_session=; Path=\/; Max-Age=0; HttpOnly; SameSite=Lax/)
 
+import { createRateService } from '../app/lib/rates'
+import type { RateSnapshot } from '../app/lib/types'
+
+const counterSnapshot: RateSnapshot = { base: 'USD', rates: { USD: 1, EUR: 0.8 }, rate_date: '2026-08-16', source: 'self-check', fetched_at: '2026-08-16T00:00:00.000Z' }
+class CounterDatabase {
+  stored: RateSnapshot | null = null
+  async getLatest() { return this.stored }
+  async getHistorical() { return null }
+  async upsertRates(rows: Array<{ date: string; base: string; currency: string; rate: number; source: string; fetched_at: string }>) {
+    if (!rows.length) return
+    const first = rows[0]
+    this.stored = {
+      base: first.base,
+      rates: Object.fromEntries(rows.map((row) => [row.currency, row.rate])),
+      rate_date: first.date,
+      source: first.source,
+      fetched_at: first.fetched_at,
+    }
+  }
+  async recordRateUpdate() {}
+}
+let counterClock = new Date('2026-08-16T00:00:00Z')
+const counterDb = new CounterDatabase()
+const counted = createRateService(async () => ({ ...counterSnapshot, fetched_at: counterClock.toISOString() }), () => counterClock, counterDb)
+
+await counted.getLatest('USD')
+assert.equal(counted.getCacheStats().live_fetch, 1)
+counterClock = new Date('2026-08-16T00:05:00Z')
+await counted.getLatest('USD')
+assert.equal(counted.getCacheStats().cache_hit, 1)
+counterClock = new Date('2026-08-16T01:05:00Z')
+await counted.getLatest('USD') // everything stale: live refetch
+assert.equal(counted.getCacheStats().live_fetch, 2)
+
+const dbOnly = createRateService(async () => { throw new Error('source down') }, () => new Date('2026-08-16T01:10:00Z'), counterDb)
+assert.equal((await dbOnly.getLatest('USD')).rates.EUR, 0.8) // stored row (01:05) is fresh
+assert.equal(dbOnly.getCacheStats().db_read, 1)
+
+const staleServed = createRateService(async () => { throw new Error('source down') }, () => new Date('2026-08-16T04:00:00Z'), counterDb)
+assert.equal((await staleServed.getLatest('USD')).rates.EUR, 0.8) // stale-but-usable wins over a dead source
+assert.equal(staleServed.getCacheStats().stale_fallback, 1)
+
 console.log('admin self-check passed')

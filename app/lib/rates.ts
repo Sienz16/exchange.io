@@ -22,6 +22,7 @@ export function createRateService(source: Source = fetchLatestRates, clock: Cloc
   const cache = new Map<string, RateSnapshot>()
   let status: RateServiceStatus = 'configured'
   let checkedAt: string | null = null
+  const cacheStats = { live_fetch: 0, db_read: 0, cache_hit: 0, stale_fallback: 0 }
 
   function isSupportedCurrency(currency: string): boolean {
     return supportedCurrencies.has(currency.trim().toUpperCase())
@@ -35,12 +36,17 @@ export function createRateService(source: Source = fetchLatestRates, clock: Cloc
     const key = normalizeBase(base)
     if (!isSupportedCurrency(key)) throw new Error(`Unsupported currency: ${key}`)
     const now = clock()
-    if (isFresh(cache.get(key), now)) return cache.get(key) as RateSnapshot
+    const cached = cache.get(key)
+    if (isFresh(cached, now)) {
+      cacheStats.cache_hit += 1
+      return cached as RateSnapshot
+    }
 
     // Stored rows are only served while fresh; a stale row means the daily
     // job missed a refresh, so the live source rehydrates and upserts here.
     const stored = database ? await database.getLatest(key) : null
     if (isFresh(stored, now)) {
+      cacheStats.db_read += 1
       cache.set(key, stored as RateSnapshot)
       return stored as RateSnapshot
     }
@@ -50,8 +56,9 @@ export function createRateService(source: Source = fetchLatestRates, clock: Cloc
       snapshot = await source(key)
     } catch (error) {
       // Prefer stale-but-usable data over a failed source response.
-      const fallback = stored ?? cache.get(key)
+      const fallback = stored ?? cached
       if (fallback) {
+        cacheStats.stale_fallback += 1
         status = 'degraded'
         checkedAt = fallback.fetched_at
         return fallback
@@ -63,6 +70,7 @@ export function createRateService(source: Source = fetchLatestRates, clock: Cloc
       date: snapshot.rate_date, base: snapshot.base, currency, rate, source: snapshot.source, fetched_at: snapshot.fetched_at,
     })))
     cache.set(key, snapshot)
+    cacheStats.live_fetch += 1
     status = 'available'
     checkedAt = snapshot.fetched_at
     return snapshot
@@ -83,6 +91,7 @@ export function createRateService(source: Source = fetchLatestRates, clock: Cloc
     getHistorical,
     isSupportedCurrency,
     getStatus: () => ({ status, checked_at: checkedAt }),
+    getCacheStats: () => ({ ...cacheStats }),
     /** Converts at the latest rate, or at `input.date` when a historical date is given. */
     async convert(input: LatestConversionInput): Promise<ConversionResult> {
       const from = normalizeBase(input.from)
@@ -112,3 +121,4 @@ export const getHistorical = defaultService.getHistorical
 export const convert = defaultService.convert
 export const isSupportedCurrency = defaultService.isSupportedCurrency
 export const getRateServiceStatus = defaultService.getStatus
+export const getCacheStats = defaultService.getCacheStats
