@@ -237,7 +237,7 @@ export async function getPipelineStats(sql: Sql): Promise<PipelineStats> {
     sql`SELECT to_char(fetched_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS fetched_at, source, status, error_text
         FROM rate_updates ORDER BY id DESC LIMIT 10`,
     sql`SELECT to_char(max(fetched_at) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS latest_fetched_at,
-          max(rate_date)::text AS latest_rate_date, count(*)::int AS daily_rows FROM daily_rates`,
+          max(date)::text AS latest_rate_date, count(*)::int AS daily_rows FROM daily_rates`,
   ])
   const fresh = (freshness[0] ?? {}) as { latest_fetched_at?: string | null; latest_rate_date?: string | null; daily_rows?: number }
   return {
