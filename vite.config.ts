@@ -40,7 +40,8 @@ export default defineConfig(async ({ mode }) => {
         },
       },
       plugins: [
-        client({ jsxImportSource: 'react' })
+        client({ jsxImportSource: 'react' }),
+        tailwindcss(),
       ],
       build: {
         // Tailwind v4 emits directives Lightning CSS cannot parse. Esbuild
