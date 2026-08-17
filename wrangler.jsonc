@@ -6,10 +6,11 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  // Daily refresh at 00:30 UTC, after open.er-api.com publishes its ~00:00 UTC update.
-  // The handler is the `scheduled` export in app/server.ts.
+  // Daily rate refresh at 00:30 UTC (after open.er-api.com publishes its ~00:00
+  // UTC update) and hourly telemetry rollup. Handlers: the `scheduled` export in
+  // app/server.ts dispatches on the cron expression.
   "triggers": {
-    "crons": ["30 0 * * *"]
+    "crons": ["30 0 * * *", "3 * * * *"]
   },
   "assets": {
     "directory": "./dist"
