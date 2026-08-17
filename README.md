@@ -155,6 +155,43 @@ DATABASE_URL=... bun dist/index.js   # serves on PORT (default 3000)
 
 The built server serves the API, SSR pages, and static assets. Outside development it registers a daily cron (`Bun.cron`, 00:30 UTC) that fetches reference rates into Postgres, plus an hourly cron (`:03`) that rolls up API telemetry. Run it under a supervisor (systemd, docker, etc.) on a VPS.
 
+### Generic VPS launch checklist
+
+The application includes portable app-level protection: a bounded in-memory limit of 120 API requests per client IP per minute, cache headers for successful API responses, request-refresh single-flight protection, and truthful health status. Put a reverse proxy in front of the app for TLS, stronger edge rate limits, request size limits, and access logs.
+
+1. Create a PostgreSQL database with TLS enabled and a dedicated application user.
+2. Apply schema and seed history:
+
+   ```bash
+   psql "$DATABASE_URL" -f app/lib/schema.sql
+   bun run scripts/seed-ecb.ts <path-to-ecb-zip-or-xml>
+   ```
+
+3. Set secrets outside the repository:
+
+   ```bash
+   export DATABASE_URL='postgres://...'
+   export ADMIN_TOKEN="$(openssl rand -hex 32)"
+   export NODE_ENV=production
+   ```
+
+4. Build and start the app:
+
+   ```bash
+   bun install --frozen-lockfile
+   bun run typecheck
+   bun run check
+   bun run build
+   bun dist/index.js
+   ```
+
+5. Run `bun dist/index.js` under systemd, Docker, or another supervisor. Restart after crashes and keep one active scheduler process unless duplicate jobs are intentionally coordinated.
+6. Configure Caddy/Nginx or equivalent for HTTPS, proxy only trusted client-IP headers, and add proxy-level rate limits. Do not expose the Bun port directly to the Internet.
+7. Monitor `/api/health`, HTTP 5xx/429 rates, newest `daily_rates.fetched_at`, and failed `rate_updates` rows. Alert when the newest successful rate is older than 26 hours.
+8. Schedule encrypted PostgreSQL backups and test restoring one before launch. Keep a rollback copy of the previous application build.
+
+The source code cannot create your VPS, database, DNS, TLS certificate, secrets, firewall rules, backups, or monitoring alerts. Complete and verify those infrastructure steps before declaring the service public.
+
 ## Production — Cloudflare Workers (optional)
 
 ```bash

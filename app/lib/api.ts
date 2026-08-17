@@ -19,11 +19,11 @@ export async function cors(c: Context, next: () => Promise<void>) {
 }
 
 export function json<T>(c: Context, body: T, status: ContentfulStatusCode = 200) {
-  return c.json(body, status, corsHeaders)
+  return c.json(body, status, { ...corsHeaders, 'Cache-Control': status >= 400 ? 'no-store' : 'public, max-age=300, stale-while-revalidate=600' })
 }
 
 export function apiError(c: Context, error: ApiError, status: ContentfulStatusCode = 400) {
-  return json(c, error, status)
+  return c.json(error, status, { ...corsHeaders, 'Cache-Control': 'no-store' })
 }
 
 export function isApiError(error: unknown): error is ApiError {

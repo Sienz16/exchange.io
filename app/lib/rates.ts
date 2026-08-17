@@ -20,6 +20,7 @@ function normalizeBase(base: string): string {
 
 export function createRateService(source: Source = fetchLatestRates, clock: Clock = () => new Date(), database: Database = getDatabase()) {
   const cache = new Map<string, RateSnapshot>()
+  const pending = new Map<string, Promise<RateSnapshot>>()
   let status: RateServiceStatus = 'configured'
   let checkedAt: string | null = null
   const cacheStats = { live_fetch: 0, db_read: 0, cache_hit: 0, stale_fallback: 0 }
@@ -51,29 +52,38 @@ export function createRateService(source: Source = fetchLatestRates, clock: Cloc
       return stored as RateSnapshot
     }
 
-    let snapshot: RateSnapshot
-    try {
-      snapshot = await source(key)
-    } catch (error) {
-      // Prefer stale-but-usable data over a failed source response.
-      const fallback = stored ?? cached
-      if (fallback) {
-        cacheStats.stale_fallback += 1
-        status = 'degraded'
-        checkedAt = fallback.fetched_at
-        return fallback
+    const existing = pending.get(key)
+    if (existing) return existing
+    const refresh = (async () => {
+      let snapshot: RateSnapshot
+      try {
+        snapshot = await source(key)
+      } catch (error) {
+        const fallback = stored ?? cached
+        if (fallback) {
+          cacheStats.stale_fallback += 1
+          status = 'degraded'
+          checkedAt = fallback.fetched_at
+          return fallback
+        }
+        status = 'unavailable'
+        throw error
       }
-      status = 'unavailable'
-      throw error
+      if (database) await database.upsertRates(Object.entries(snapshot.rates).map(([currency, rate]) => ({
+        date: snapshot.rate_date, base: snapshot.base, currency, rate, source: snapshot.source, fetched_at: snapshot.fetched_at,
+      })))
+      cache.set(key, snapshot)
+      cacheStats.live_fetch += 1
+      status = 'available'
+      checkedAt = snapshot.fetched_at
+      return snapshot
+    })()
+    pending.set(key, refresh)
+    try {
+      return await refresh
+    } finally {
+      pending.delete(key)
     }
-    if (database) await database.upsertRates(Object.entries(snapshot.rates).map(([currency, rate]) => ({
-      date: snapshot.rate_date, base: snapshot.base, currency, rate, source: snapshot.source, fetched_at: snapshot.fetched_at,
-    })))
-    cache.set(key, snapshot)
-    cacheStats.live_fetch += 1
-    status = 'available'
-    checkedAt = snapshot.fetched_at
-    return snapshot
   }
 
   async function getHistorical(date: string, base: string): Promise<RateResult> {

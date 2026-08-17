@@ -21,7 +21,7 @@ async function hmac(value: string, key: string): Promise<string> {
 }
 
 function cookieAttributes(maxAgeSeconds: number): string {
-  const secure = readEnv('NODE_ENV') === 'production' ? '; Secure' : ''
+  const secure = readEnv('NODE_ENV') !== 'development' ? '; Secure' : ''
   return `; Path=/; Max-Age=${maxAgeSeconds}; HttpOnly; SameSite=Lax${secure}`
 }
 
@@ -45,5 +45,6 @@ export async function verifySessionCookie(cookieHeader: string | null | undefine
 }
 
 export function clearSessionCookie(): string {
-  return `${ADMIN_COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`
+  const secure = readEnv('NODE_ENV') !== 'development' ? '; Secure' : ''
+  return `${ADMIN_COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${secure}`
 }
