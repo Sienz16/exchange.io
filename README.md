@@ -259,7 +259,7 @@ bun run check       # self-check suites: validation · rates · forecast · API 
 
 The repository currently uses Bun's built-in `node:assert` self-check scripts instead of adding a test framework. Add Vitest or another runner when parallel test files, coverage thresholds, fixtures, or browser tests justify the dependency.
 
-The HonoX plugin still passes Vite's deprecated `esbuild` option internally. The build logger suppresses only that known upstream warning until HonoX removes it. Tailwind v4 CSS minification is disabled because Vite 8's Lightning CSS parser does not understand Tailwind's `@theme` and `@tailwind` directives; Tailwind's own Vite plugin still processes the CSS.
+The HonoX plugin still passes Vite's deprecated `esbuild` option internally. The build logger suppresses only that known upstream warning until HonoX removes it. Vite uses esbuild CSS minification because Vite 8's Lightning CSS parser does not understand Tailwind's `@theme` and `@tailwind` directives.
 
 ## Roadmap
 

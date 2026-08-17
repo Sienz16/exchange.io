@@ -43,9 +43,11 @@ export default defineConfig(async ({ mode }) => {
         client({ jsxImportSource: 'react' })
       ],
       build: {
-        // Lightning CSS does not understand Tailwind v4's @theme/@tailwind
-        // directives; Tailwind's Vite plugin handles them before output.
-        cssMinify: false,
+        // Tailwind v4 emits directives Lightning CSS cannot parse. Esbuild
+        // minifies the already-expanded Tailwind output without that warning.
+        // Vite 8 types omit legacy esbuild CSS minification although runtime
+        // still supports it; keep this compatibility value explicit.
+        cssMinify: 'esbuild' as 'lightningcss',
         rollupOptions: {
           input: ['./app/client.ts', './app/style.css'],
           output: {
