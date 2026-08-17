@@ -18,3 +18,29 @@ CREATE TABLE IF NOT EXISTS rate_updates (
   status text NOT NULL CHECK (status IN ('success', 'error')),
   error_text text
 );
+
+-- API request telemetry (admin dashboard). No raw IPs or user agents: ip_hash
+-- is a daily-rotating salted hash, ua_class is a 3-way classification.
+CREATE TABLE IF NOT EXISTS api_requests (
+  ts timestamptz NOT NULL,
+  route text NOT NULL,
+  status integer NOT NULL,
+  duration_ms integer NOT NULL,
+  ip_hash text NOT NULL,
+  referer_domain text,
+  ua_class text NOT NULL,
+  pair text
+);
+
+CREATE INDEX IF NOT EXISTS api_requests_ts_route_idx ON api_requests (ts, route);
+
+CREATE TABLE IF NOT EXISTS api_requests_hourly (
+  hour_utc timestamptz NOT NULL,
+  route text NOT NULL,
+  requests integer NOT NULL,
+  errors integer NOT NULL,
+  avg_ms double precision NOT NULL,
+  p95_ms double precision NOT NULL,
+  uniques integer NOT NULL,
+  PRIMARY KEY (hour_utc, route)
+);

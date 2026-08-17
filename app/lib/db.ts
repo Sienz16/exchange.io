@@ -14,7 +14,7 @@ export type RateDatabase = {
 
 export type RateUpdate = { fetched_at: string; source: string; status: 'success' | 'error'; error_text: string | null }
 
-type Sql = ReturnType<typeof postgres>
+export type Sql = ReturnType<typeof postgres>
 
 function snapshot(rows: RateRow[]): RateSnapshot | null {
   if (!rows.length) return null
@@ -106,10 +106,18 @@ export function createRateDatabase(sql: Sql): RateDatabase {
   }
 }
 
+let sql: Sql | null | undefined
+export function getSql(): Sql | null {
+  if (sql !== undefined) return sql
+  const url = readEnv('DATABASE_URL')
+  sql = url ? postgres(url, { max: 1 }) : null
+  return sql
+}
+
 let database: RateDatabase | null | undefined
 export function getDatabase(): RateDatabase | null {
   if (database !== undefined) return database
-  const url = readEnv('DATABASE_URL')
-  database = url ? createRateDatabase(postgres(url, { max: 1 })) : null
+  const instance = getSql()
+  database = instance ? createRateDatabase(instance) : null
   return database
 }
