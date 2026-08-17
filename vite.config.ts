@@ -1,7 +1,7 @@
 import tailwindcss from '@tailwindcss/vite'
 import honox from 'honox/vite'
 import client from 'honox/vite/client'
-import { defineConfig } from 'vite'
+import { createLogger, defineConfig } from 'vite'
 import path from 'node:path'
 
 // Deployment target: 'bun' (default), 'node', or 'cloudflare-workers'.
@@ -19,22 +19,33 @@ if (!(deployTarget in adapters)) {
   throw new Error(`Unknown DEPLOY_TARGET "${deployTarget}". Use one of: ${Object.keys(adapters).join(', ')}`)
 }
 
+const logger = createLogger()
 const common = {
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './app')
     }
-  }
+  },
 }
 
 export default defineConfig(async ({ mode }) => {
   if (mode === 'client') {
     return {
       ...common,
+      customLogger: {
+        ...logger,
+        warn(message: Parameters<typeof logger.warn>[0], options: Parameters<typeof logger.warn>[1]) {
+          if (message.includes('`esbuild` option was specified by "honox-vite-client" plugin')) return
+          logger.warn(message, options)
+        },
+      },
       plugins: [
         client({ jsxImportSource: 'react' })
       ],
       build: {
+        // Lightning CSS does not understand Tailwind v4's @theme/@tailwind
+        // directives; Tailwind's Vite plugin handles them before output.
+        cssMinify: false,
         rollupOptions: {
           input: ['./app/client.ts', './app/style.css'],
           output: {
