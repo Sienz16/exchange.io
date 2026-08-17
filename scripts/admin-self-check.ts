@@ -149,4 +149,12 @@ const staleServed = createRateService(async () => { throw new Error('source down
 assert.equal((await staleServed.getLatest('USD')).rates.EUR, 0.8) // stale-but-usable wins over a dead source
 assert.equal(staleServed.getCacheStats().stale_fallback, 1)
 
+import { getDashboardStats, getPipelineStats, rollupAndPrune, runRollup } from '../app/lib/analytics'
+
+assert.equal(typeof rollupAndPrune, 'function')
+assert.equal(typeof getDashboardStats, 'function')
+assert.equal(typeof getPipelineStats, 'function')
+assert.equal(typeof runRollup, 'function')
+// SQL behavior is exercised against the local database by the live smoke test.
+
 console.log('admin self-check passed')
