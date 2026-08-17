@@ -206,7 +206,7 @@ export default createRoute((c) => {
         <div className={page + ' grid gap-11 pb-13 pt-16 sm:grid-cols-2 lg:grid-cols-[1.7fr_1fr_1fr_1fr] lg:gap-11'}>
           <div>
             <a className="font-display text-[1.12rem] font-bold tracking-[-.05em]" href="/">exchange<span className="text-accent-strong">.io</span></a>
-            <p className="mt-4 text-[.82rem] leading-[1.75] text-faint">Reference currency infrastructure.<br />Daily rates · ECB history · honest metadata.</p>
+            <p className="mt-4 text-[.82rem] leading-[1.75] text-faint">Reference currency infrastructure.<br />ECB rates · ECB history · honest metadata.</p>
           </div>
           {[
             ['Product', [['Converter', '/playground'], ['Documentation', '/docs'], ['API preview', '/#api']]],
@@ -221,7 +221,7 @@ export default createRoute((c) => {
           ))}
           <div className="flex flex-col items-start gap-2.5">
             <span className="mb-1.5 font-mono text-[.62rem] font-medium uppercase tracking-[.16em] text-faint">SOURCE</span>
-            <a href="" rel="noopener noreferrer" target="_blank" className="text-[.84rem] text-muted transition-colors hover:text-accent-strong"> ↗</a>
+              <a href="https://www.ecb.europa.eu/services/disclaimer/html/index.en.html" rel="noopener noreferrer" target="_blank" className="text-[.84rem] text-muted transition-colors hover:text-accent-strong">ECB source and terms ↗</a>
             <a href="/api/health" className="text-[.84rem] text-muted transition-colors hover:text-accent-strong">/api/health</a>
           </div>
         </div>

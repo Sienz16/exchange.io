@@ -93,7 +93,7 @@ export default createRoute((c) => {
           <section id="quickstart" className="border-b border-line py-21">
             <p className="m-0 font-mono text-[.66rem] font-medium uppercase tracking-[.16em] text-faint">START HERE</p>
             <h2 className={sectionHeading}>One request.<br /><em className={em}>Readable output.</em></h2>
-            <p className="max-w-[660px] leading-[1.8] text-muted">No key is required. Send query parameters over HTTPS and read JSON back. Amounts are numeric, currency codes are uppercase ISO 4217-style codes, and every rate response identifies its source and dates.</p>
+          <p className="max-w-[660px] leading-[1.8] text-muted">No key is required. Send query parameters over HTTPS and read JSON back. Amounts are numeric, currency codes are uppercase ISO 4217-style codes, and every rate response identifies its source and dates. Rates come from the <a className="underline" href="https://www.ecb.europa.eu/services/disclaimer/html/index.en.html" rel="noopener noreferrer" target="_blank">European Central Bank</a>; non-EUR bases are derived from ECB EUR references by exchange.io.</p>
             <pre className={codeBlock}><code>{curl('/api/convert?from=USD&to=EUR&amount=100')}</code></pre>
             <p className="text-[.8rem] text-faint">Free during this early access period. Add caching on your side when your workload does not need a fresh snapshot per request.</p>
           </section>

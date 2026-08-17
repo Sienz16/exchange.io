@@ -200,9 +200,17 @@ bun run check       # self-check suites: validation · rates · forecast · API 
 - [ ] Forecast v2: multi-model competition with published, continuously backtested accuracy
 - [ ] Second upstream source with failover and cross-validation
 
-## Data sources & acknowledgements
+## Data Sources & Acknowledgements
 
-- []() — daily reference rates, 30 currencies
-- [ECB euro reference rates](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html) — official history back to 1999
+All rate data comes from the **European Central Bank**, used in line with the
+[ECB's copyright terms](https://www.ecb.europa.eu/services/disclaimer/html/index.en.html)
+(cited as source; published for information purposes; the ECB accepts no liability
+for reliance on it):
+
+- [ECB daily reference feed](https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml) — daily EUR reference rates, 30 currencies
+- [ECB euro reference rates archive](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html) — official history back to 1999
+
+Rates for non-EUR bases are derived from the EUR references. This transformation is
+performed by exchange.io and does not represent an ECB endorsement. Not financial advice.
 
 The code is released under the [MIT License](LICENSE). Rates remain reference data from their upstream sources — not financial advice.

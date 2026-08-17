@@ -6,6 +6,11 @@ dist/
 .wrangler/
 .superpowers/
 docs/superpowers/
+.idea.md
+IDEA.md
+RULES.md
+design.md
+plan.md
 .cache/
 coverage/
 .yarn/
