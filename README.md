@@ -161,6 +161,8 @@ The built server serves the API, SSR pages, and static assets. Outside developme
 
 The application includes portable app-level protection: a bounded in-memory limit of 120 API requests per client IP per minute, cache headers for successful API responses, request-refresh single-flight protection, and truthful health status. Put a reverse proxy in front of the app for TLS, stronger edge rate limits, request size limits, and access logs.
 
+The in-memory limiter is intentionally safe for one app process only. If running multiple app instances, enforce the public limit at the shared reverse proxy/load balancer, or replace `app/lib/rate-limit.ts` with a shared-store implementation (for example, Redis or PostgreSQL advisory/row-based counters). Do not assume each instance's local limiter adds up to one global limit.
+
 1. Create a PostgreSQL database with TLS enabled and a dedicated application user.
 2. Apply schema and seed history:
 
@@ -229,6 +231,10 @@ before each dashboard read. Without `ADMIN_TOKEN` the dashboard stays disabled, 
 bun run typecheck   # tsc --noEmit
 bun run check       # self-check suites: validation · rates · forecast · API · admin/auth/telemetry
 ```
+
+The repository currently uses Bun's built-in `node:assert` self-check scripts instead of adding a test framework. Add Vitest or another runner when parallel test files, coverage thresholds, fixtures, or browser tests justify the dependency.
+
+The remaining Vite warning (`honox-vite-client` deprecated `esbuild` option) is emitted by the upstream HonoX plugin. Upgrade HonoX/Vite when a compatible release removes it; no local override is applied because builds currently pass and overriding plugin internals would risk runtime changes.
 
 ## Roadmap
 
