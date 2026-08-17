@@ -25,6 +25,6 @@ const failed = createDailyRateFetcher({
 const failure = await failed()
 assert.equal(failure.status, 'error')
 assert.match(failure.error, /source down/)
-assert.deepEqual(failedUpdates, [{ source: 'open.er-api.com', status: 'error', fetched_at: failure.fetched_at, error_text: 'source down' }])
+assert.deepEqual(failedUpdates, [{ source: 'ecb.europa.eu', status: 'error', fetched_at: failure.fetched_at, error_text: 'source down' }])
 
 console.log('task 5 self-check passed')

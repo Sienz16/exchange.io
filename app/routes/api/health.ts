@@ -8,7 +8,7 @@ export default createRoute((c) => json(c, {
   time: new Date().toISOString(),
   data_source: {
     ...getRateServiceStatus(),
-    name: 'open.er-api.com',
+    name: 'ecb.europa.eu',
     database: getDatabase() ? 'configured' : 'disabled',
   },
 }))

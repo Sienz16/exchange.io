@@ -7,7 +7,7 @@ import {
   parseQuery,
 } from '../app/lib/validation'
 import { createRateService } from '../app/lib/rates'
-import { fetchLatestRates } from '../app/lib/sources/er-api'
+import { fetchLatestRates, parseEcbXml } from '../app/lib/sources/ecb'
 import type { RateSnapshot } from '../app/lib/types'
 
 const query = parseQuery(convertQuerySchema, {
@@ -140,31 +140,42 @@ assert.equal((await dbService.getLatest('USD')).rates.EUR, 1) // source down: st
 assert.equal(dbService.getStatus().status, 'degraded')
 assert.equal(dbFetches, 3)
 
-const sourceResponse = (body: unknown, ok = true, status = 200) => ({
+const xmlResponse = (body: string, ok = true, status = 200) => ({
   ok,
   status,
-  json: async () => body,
+  text: async () => body,
 }) as Response
+const sampleEcbXml = `<?xml version="1.0" encoding="UTF-8"?>
+<gesmes:Envelope xmlns:gesmes="http://www.gesmes.org/xml/2002-08-01" xmlns="http://www.ecb.europa.eu/vocabulary/2002-08-01/eurofxref">
+  <gesmes:subject>Reference rates</gesmes:subject>
+  <Cube>
+    <Cube time='2026-08-14'>
+      <Cube currency='USD' rate='1.1'/>
+      <Cube currency='JPY' rate='170.5'/>
+      <Cube currency='GBP' rate='0.85'/>
+    </Cube>
+  </Cube>
+</gesmes:Envelope>`
+const archiveStyleXml = sampleEcbXml.replaceAll("'", '"')
+assert.equal(parseEcbXml(archiveStyleXml).length, 3) // the historical archive quotes with double quotes
 const runSourceCheck = (fetchImpl: typeof fetch) => fetchLatestRates(' usd ', fetchImpl)
 
-await assert.rejects(() => runSourceCheck(async () => sourceResponse({}, false, 503)), /HTTP 503/)
-await assert.rejects(() => runSourceCheck(async () => sourceResponse({
-  result: 'success', base_code: 'USD', time_last_update_utc: 'Sun, 16 Aug 2026 00:00:00 GMT', rates: {},
-})), /invalid response/)
-await assert.rejects(() => runSourceCheck(async () => sourceResponse({
-  result: 'success', base_code: 'USD', time_last_update_utc: 'Sun, 16 Aug 2026 00:00:00 GMT', rates: { USD: Number.NaN },
-})), /invalid response/)
-Object.defineProperty(Object.prototype, 'USD', { value: 1, configurable: true })
-try {
-  await assert.rejects(() => runSourceCheck(async () => sourceResponse({
-    result: 'success', base_code: 'USD', time_last_update_utc: 'Sun, 16 Aug 2026 00:00:00 GMT', rates: { EUR: 0.8 },
-  })), /invalid response/)
-} finally {
-  Reflect.deleteProperty(Object.prototype, 'USD')
-}
-await assert.rejects(() => runSourceCheck(async () => sourceResponse({
-  result: 'success', base_code: 'USD', time_last_update_utc: 'not a date', rates: { USD: 1 },
-})), /invalid update time/)
+const derived = await runSourceCheck(async () => xmlResponse(sampleEcbXml))
+assert.equal(derived.base, 'USD')
+assert.equal(derived.rate_date, '2026-08-14')
+assert.equal(derived.source, 'ecb.europa.eu')
+assert.equal(derived.rates.USD, 1)
+assert.ok(Math.abs(derived.rates.EUR - 1 / 1.1) < 1e-12)
+assert.ok(Math.abs(derived.rates.JPY - 170.5 / 1.1) < 1e-12)
+
+const eurBase = await fetchLatestRates('EUR', async () => xmlResponse(sampleEcbXml))
+assert.equal(eurBase.base, 'EUR')
+assert.equal(eurBase.rates.USD, 1.1)
+assert.equal(eurBase.rates.EUR, 1)
+
+await assert.rejects(() => fetchLatestRates('VND', async () => xmlResponse(sampleEcbXml)), /Unsupported currency/)
+await assert.rejects(() => runSourceCheck(async () => xmlResponse('', false, 503)), /HTTP 503/)
+await assert.rejects(() => runSourceCheck(async () => xmlResponse('<Envelope/>')), /no rates/)
 
 await assert.rejects(() => fetchLatestRates('USD', async (_input, init) => new Promise((_resolve, reject) => {
   init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))

@@ -28,6 +28,17 @@ function snapshot(rows: RateRow[]): RateSnapshot | null {
   }
 }
 
+export function deriveFromEur(eur: RateSnapshot, base: string): RateSnapshot | null {
+  const eurToBase = eur.rates[base]
+  if (eurToBase === undefined || !Number.isFinite(eurToBase) || eurToBase <= 0) return null
+  const rates: Record<string, number> = { [base]: 1, EUR: 1 / eurToBase }
+  for (const [currency, rate] of Object.entries(eur.rates)) {
+    if (currency === base || currency === 'EUR') continue
+    rates[currency] = rate / eurToBase
+  }
+  return { base, rates, rate_date: eur.rate_date, source: eur.source, fetched_at: eur.fetched_at }
+}
+
 export function createRateDatabase(sql: Sql): RateDatabase {
   async function findBaseRows(base: string, date?: string): Promise<RateSnapshot | null> {
     const rows = date
@@ -36,20 +47,9 @@ export function createRateDatabase(sql: Sql): RateDatabase {
     return snapshot(rows as unknown as RateRow[])
   }
 
-  function deriveFromEur(eur: RateSnapshot, base: string): RateSnapshot | null {
-    const eurToBase = eur.rates[base]
-    if (eurToBase === undefined || !Number.isFinite(eurToBase) || eurToBase <= 0) return null
-    const rates: Record<string, number> = { [base]: 1, EUR: 1 / eurToBase }
-    for (const [currency, rate] of Object.entries(eur.rates)) {
-      if (currency === base || currency === 'EUR') continue
-      rates[currency] = rate / eurToBase
-    }
-    return { base, rates, rate_date: eur.rate_date, source: eur.source, fetched_at: eur.fetched_at }
-  }
-
   // Exact base rows win; for a dated lookup with no exact rows, derive any base
-  // from EUR reference rows (Frankfurter-style cross-rate math). Latest lookups
-  // do not derive so the live source (richer, 166 currencies) can serve them.
+  // from EUR reference rows (cross-rate math). Latest lookups do not derive —
+  // the live source derives from the fresh ECB EUR reference instead.
   async function find(base: string, date?: string): Promise<RateSnapshot | null> {
     const exact = await findBaseRows(base, date)
     if (exact) return exact
