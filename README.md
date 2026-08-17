@@ -157,6 +157,31 @@ DATABASE_URL=... bun dist/index.js   # serves on PORT (default 3000)
 
 The built server serves the API, SSR pages, and static assets. Outside development it registers a daily cron (`Bun.cron`, 00:30 UTC) that fetches reference rates into Postgres, plus an hourly cron (`:03`) that rolls up API telemetry. Run it under a supervisor (systemd, docker, etc.) on a VPS.
 
+## Production — Containers
+
+`Dockerfile` builds a multi-stage, non-root Bun image. It works with Docker, Podman, Coolify, Kubernetes, and other OCI-compatible platforms. The image exposes port `3000`, reads `PORT` at runtime, runs `/api/health` as its container health check, and does not bundle PostgreSQL.
+
+Build and run with any OCI-compatible runtime:
+
+```bash
+docker build -t exchange-io .
+docker run --rm -p 3000:3000 \
+  -e NODE_ENV=production \
+  -e DATABASE_URL='postgres://...' \
+  -e ADMIN_TOKEN="$(openssl rand -hex 32)" \
+  exchange-io
+```
+
+`docker-compose.example.yml` provides an optional app-plus-PostgreSQL example. Copy it to `compose.yml`, create a secret `.env` file outside Git, start the services, then apply the schema from a machine with `psql` and seed ECB history using the repository's Bun tooling before removing local build files:
+
+```bash
+docker compose -f docker-compose.example.yml up -d --build
+psql "$DATABASE_URL" -f app/lib/schema.sql
+bun run scripts/seed-ecb.ts <path-to-ecb-zip-or-xml>
+```
+
+For production, managed PostgreSQL or a separately operated database is preferred over the example database service. Persist database storage and backups; the app container itself is stateless.
+
 ### Generic VPS launch checklist
 
 The application includes portable app-level protection: a bounded in-memory limit of 120 API requests per client IP per minute, cache headers for successful API responses, request-refresh single-flight protection, and truthful health status. Put a reverse proxy in front of the app for TLS, stronger edge rate limits, request size limits, and access logs.

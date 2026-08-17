@@ -1,0 +1,15 @@
+.git
+.github
+.hono
+.wrangler
+.superpowers
+docs/superpowers
+node_modules
+dist
+coverage
+.env
+.env.*
+!.env.example
+.dev.vars
+*.log
+.DS_Store
