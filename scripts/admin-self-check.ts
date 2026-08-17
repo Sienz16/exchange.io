@@ -89,4 +89,22 @@ const nullRecorder = createRequestRecorder(null)
 nullRecorder.record(entry('/api/latest')) // no-op, must not throw
 await nullRecorder.flushAll()
 
+import { clearSessionCookie, constantTimeEqual, createSessionCookie, verifySessionCookie } from '../app/lib/admin-auth'
+
+assert.equal(constantTimeEqual('abc123', 'abc123'), true)
+assert.equal(constantTimeEqual('abc123', 'abc124'), false)
+assert.equal(constantTimeEqual('abc', 'abcd'), false)
+
+const token = 'test-admin-token-0123456789'
+const cookie = await createSessionCookie(token, Date.parse('2026-08-17T12:00:00Z'))
+assert.match(cookie, /^admin_session=\d+\.[0-9a-f]{64}; Path=\/; Max-Age=43200; HttpOnly; SameSite=Lax/)
+assert.equal(await verifySessionCookie(cookie, token, Date.parse('2026-08-17T20:00:00Z')), true)
+assert.equal(await verifySessionCookie(cookie, 'wrong-token-000000000000', Date.parse('2026-08-17T20:00:00Z')), false)
+assert.equal(await verifySessionCookie(cookie, token, Date.parse('2026-08-19T00:00:00Z')), false) // expired (>12h)
+const tampered = `admin_session=1.${cookie.split('.')[1]}`
+assert.equal(await verifySessionCookie(tampered, token, Date.parse('2026-08-17T20:00:00Z')), false) // tampered expiry
+assert.equal(await verifySessionCookie('garbage', token), false)
+assert.equal(await verifySessionCookie(null, token), false)
+assert.match(clearSessionCookie(), /^admin_session=; Path=\/; Max-Age=0; HttpOnly; SameSite=Lax/)
+
 console.log('admin self-check passed')
