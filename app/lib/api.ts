@@ -19,7 +19,19 @@ export async function cors(c: Context, next: () => Promise<void>) {
 }
 
 export function json<T>(c: Context, body: T, status: ContentfulStatusCode = 200) {
-  return c.json(body, status, { ...corsHeaders, 'Cache-Control': status >= 400 ? 'no-store' : 'public, max-age=300, stale-while-revalidate=600' })
+  const payload = JSON.stringify(body)
+  const headers: Record<string, string> = { ...corsHeaders, 'Cache-Control': status >= 400 ? 'no-store' : 'public, max-age=300, stale-while-revalidate=600' }
+  if (status < 400) {
+    let hash = 2166136261
+    for (let index = 0; index < payload.length; index += 1) {
+      hash ^= payload.charCodeAt(index)
+      hash = Math.imul(hash, 16777619)
+    }
+    const etag = `W/\"${(hash >>> 0).toString(16)}\"`
+    headers.ETag = etag
+    if (c.req.header('If-None-Match') === etag) return new Response(null, { status: 304, headers })
+  }
+  return new Response(payload, { status, headers: { ...headers, 'Content-Type': 'application/json; charset=UTF-8' } })
 }
 
 export function apiError(c: Context, error: ApiError, status: ContentfulStatusCode = 400) {

@@ -1,0 +1,95 @@
+openapi: 3.1.0
+info:
+  title: exchange.io API
+  version: 1.0.0
+  description: Daily ECB reference exchange rates, historical rates, conversion, and estimates.
+servers:
+  - url: https://your-domain.example
+paths:
+  /api/latest:
+    get:
+      summary: Get latest rates
+      parameters:
+        - name: base
+          in: query
+          schema: { type: string, pattern: '^[A-Z]{3}$', default: USD }
+      responses:
+        '200':
+          description: Latest reference snapshot
+          content: { application/json: { schema: { $ref: '#/components/schemas/RateSnapshot' } } }
+  /api/convert:
+    get:
+      summary: Convert an amount
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, pattern: '^[A-Z]{3}$' } }
+        - { name: to, in: query, required: true, schema: { type: string, pattern: '^[A-Z]{3}$' } }
+        - { name: amount, in: query, required: true, schema: { type: number, exclusiveMinimum: 0 } }
+        - { name: date, in: query, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: Conversion result
+          content: { application/json: { schema: { $ref: '#/components/schemas/Conversion' } } }
+  /api/historical:
+    get:
+      summary: Get historical rates
+      parameters:
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+        - { name: base, in: query, schema: { type: string, pattern: '^[A-Z]{3}$', default: USD } }
+      responses:
+        '200':
+          description: Historical reference snapshot
+          content: { application/json: { schema: { $ref: '#/components/schemas/RateSnapshot' } } }
+  /api/forecast:
+    get:
+      summary: Estimate a future pair rate
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, pattern: '^[A-Z]{3}$' } }
+        - { name: to, in: query, required: true, schema: { type: string, pattern: '^[A-Z]{3}$' } }
+        - { name: horizon, in: query, required: true, schema: { type: integer, minimum: 1, maximum: 30 } }
+      responses:
+        '200':
+          description: Forecast estimate
+          content: { application/json: { schema: { $ref: '#/components/schemas/Forecast' } } }
+  /api/currencies:
+    get:
+      summary: List supported currencies
+      responses: { '200': { description: Currency list } }
+  /api/health:
+    get:
+      summary: Check service state
+      responses: { '200': { description: Service status } }
+components:
+  schemas:
+    RateSnapshot:
+      type: object
+      required: [base, rates, rate_date, source, fetched_at]
+      properties:
+        base: { type: string }
+        rates: { type: object, additionalProperties: { type: number } }
+        rate_date: { type: string, format: date }
+        source: { type: string }
+        fetched_at: { type: string, format: date-time }
+    Conversion:
+      allOf:
+        - $ref: '#/components/schemas/RateSnapshot'
+        - type: object
+          required: [from, to, amount, result, rate]
+          properties:
+            from: { type: string }
+            to: { type: string }
+            amount: { type: number }
+            result: { type: number }
+            rate: { type: number }
+    Forecast:
+      type: object
+      required: [from, to, estimate, lower, upper, model_version, training_date, horizon, disclaimer]
+      properties:
+        from: { type: string }
+        to: { type: string }
+        estimate: { type: number }
+        lower: { type: number }
+        upper: { type: number }
+        model_version: { type: string }
+        training_date: { type: string, format: date }
+        horizon: { type: integer }
+        disclaimer: { type: string }

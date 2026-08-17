@@ -33,7 +33,13 @@ try {
   const latest = await fetch(`${baseUrl}/api/latest?base=USD`)
   assert.equal(latest.status, 200)
   assert.equal(latest.headers.get('access-control-allow-origin'), '*')
+  const etag = latest.headers.get('etag')
+  assert.ok(etag)
   assert.equal((await latest.json() as { base: string }).base, 'USD')
+
+  const notModified = await fetch(`${baseUrl}/api/latest?base=USD`, { headers: { 'If-None-Match': etag } })
+  assert.equal(notModified.status, 304)
+  assert.equal(notModified.headers.get('etag'), etag)
 
   const latestHealth = await fetch(`${baseUrl}/api/health`)
   const latestHealthBody = await latestHealth.json() as { data_source: { status: string; checked_at: string | null } }

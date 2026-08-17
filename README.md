@@ -53,6 +53,8 @@ Prefer to click first? The built-in [playground](http://localhost:5173/playgroun
 
 ## API
 
+OpenAPI 3.1 specification: [`public/openapi.yaml`](public/openapi.yaml). Replace its example server URL before publishing generated client documentation.
+
 | Endpoint | What it does | Example |
 | --- | --- | --- |
 | `GET /api/latest` | Newest reference snapshot, any base currency | `/api/latest?base=USD` |
