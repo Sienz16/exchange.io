@@ -14,10 +14,10 @@ const history = [
 
 const forecast = forecastFromHistory({ from: 'USD', to: 'EUR', horizon: 3 }, history)
 assert(forecast)
-assert.equal(forecast.estimate, 0.8314285714285715)
+assert.equal(forecast.estimate, 0.8480952380952381)
 assert(forecast.lower < forecast.estimate)
 assert(forecast.estimate < forecast.upper)
-assert.equal(forecast.model_version, 'moving-average-v1')
+assert.equal(forecast.model_version, 'trend-blend-v2')
 assert.equal(forecast.training_date, '2026-01-08')
 assert.equal(forecast.horizon, 3)
 assert.equal(forecastFromHistory({ from: 'USD', to: 'EUR', horizon: 1 }, history.slice(0, 3))?.model_version, 'seasonal-naive-v1')

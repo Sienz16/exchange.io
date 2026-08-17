@@ -2,7 +2,7 @@ import { getDatabase, type PairRateRow } from './db'
 import type { ForecastResult } from './types'
 
 const WINDOW = 7
-const MODEL_VERSION = 'moving-average-v1'
+const MODEL_VERSION = 'trend-blend-v2'
 const DISCLAIMER = 'Estimate only; not financial advice or a trading signal.'
 
 export type ForecastInput = { from: string; to: string; horizon: number }
@@ -17,6 +17,9 @@ export function forecastFromHistory(input: ForecastInput, history: PairRateRow[]
   const baseline = values.length >= WINDOW
     ? values.slice(-WINDOW).reduce((sum, value) => sum + value, 0) / WINDOW
     : values[values.length - 1]
+  const recent = values.slice(-WINDOW)
+  const slope = recent.length > 1 ? (recent[recent.length - 1] - recent[0]) / (recent.length - 1) : 0
+  const estimate = values.length >= WINDOW ? baseline + slope * ((input.horizon + 1) / 2) : baseline
   const errors = values.length > 1
     ? values.slice(1).map((value, index) => value - values[index])
     : []
@@ -29,9 +32,9 @@ export function forecastFromHistory(input: ForecastInput, history: PairRateRow[]
   return {
     from: input.from,
     to: input.to,
-    estimate: baseline,
-    lower: Math.max(Number.MIN_VALUE, baseline - margin),
-    upper: baseline + margin,
+    estimate,
+    lower: Math.max(Number.MIN_VALUE, estimate - margin),
+    upper: estimate + margin,
     model_version: values.length >= WINDOW ? MODEL_VERSION : 'seasonal-naive-v1',
     training_date: usable[usable.length - 1].date,
     horizon: input.horizon,

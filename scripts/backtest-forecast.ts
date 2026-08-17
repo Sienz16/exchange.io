@@ -15,7 +15,7 @@ const history = [
 
 const forecast = forecastFromHistory({ from: 'USD', to: 'EUR', horizon: 3 }, history)
 assert(forecast)
-assert.equal(forecast.estimate, 0.84)
+assert.equal(forecast.estimate, 0.8566666666666667)
 assert(forecast.lower < forecast.estimate)
 assert(forecast.estimate < forecast.upper)
 assert.equal(forecast.training_date, '2026-01-09')
