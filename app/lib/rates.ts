@@ -1,4 +1,6 @@
 import { fetchLatestRates, ecbCurrencies } from './sources/ecb'
+import { fetchFrankfurterRates } from './sources/frankfurter'
+import { withFallback } from './sources/fallback'
 import { getDatabase } from './db'
 import type { ConversionResult, RateResult, RateSnapshot } from './types'
 
@@ -18,7 +20,7 @@ function normalizeBase(base: string): string {
   return normalized
 }
 
-export function createRateService(source: Source = fetchLatestRates, clock: Clock = () => new Date(), database: Database = getDatabase()) {
+export function createRateService(source: Source = withFallback(fetchLatestRates, fetchFrankfurterRates), clock: Clock = () => new Date(), database: Database = getDatabase()) {
   const cache = new Map<string, RateSnapshot>()
   const pending = new Map<string, Promise<RateSnapshot>>()
   let status: RateServiceStatus = 'configured'

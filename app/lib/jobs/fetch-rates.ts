@@ -1,6 +1,8 @@
 import { getDatabase, type RateDatabase, type RateRow } from '../db'
 import { readEnv } from '../env'
 import { fetchLatestRates, ECB_SOURCE } from '../sources/ecb'
+import { fetchFrankfurterRates } from '../sources/frankfurter'
+import { withFallback } from '../sources/fallback'
 import type { RateSnapshot } from '../types'
 
 type Source = (base: string) => Promise<RateSnapshot>
@@ -8,7 +10,7 @@ type DailyFetchOptions = { source?: Source; database?: RateDatabase | null; base
 export type DailyFetchResult = { status: 'success'; rows: number; fetched_at: string } | { status: 'error'; error: string; fetched_at: string }
 
 export function createDailyRateFetcher(options: DailyFetchOptions = {}) {
-  const source = options.source ?? fetchLatestRates
+  const source = options.source ?? withFallback(fetchLatestRates, fetchFrankfurterRates)
   const database = options.database === undefined ? getDatabase() : options.database
   const base = (options.base ?? readEnv('DAILY_RATE_BASE') ?? 'EUR').trim().toUpperCase()
   const clock = options.clock ?? (() => new Date())

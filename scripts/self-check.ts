@@ -8,6 +8,7 @@ import {
 } from '../app/lib/validation'
 import { createRateService } from '../app/lib/rates'
 import { fetchLatestRates, parseEcbXml } from '../app/lib/sources/ecb'
+import { withFallback } from '../app/lib/sources/fallback'
 import type { RateSnapshot } from '../app/lib/types'
 
 const query = parseQuery(convertQuerySchema, {
@@ -159,6 +160,14 @@ const sampleEcbXml = `<?xml version="1.0" encoding="UTF-8"?>
 const archiveStyleXml = sampleEcbXml.replaceAll("'", '"')
 assert.equal(parseEcbXml(archiveStyleXml).length, 3) // the historical archive quotes with double quotes
 const runSourceCheck = (fetchImpl: typeof fetch) => fetchLatestRates(' usd ', fetchImpl)
+
+let primaryCalls = 0
+const fallbackResult = await withFallback(async () => {
+  primaryCalls += 1
+  throw new Error('primary down')
+}, async () => ({ ...snapshots.USD, source: 'fallback' }))('USD')
+assert.equal(primaryCalls, 1)
+assert.equal(fallbackResult.source, 'fallback')
 
 const derived = await runSourceCheck(async () => xmlResponse(sampleEcbXml))
 assert.equal(derived.base, 'USD')
