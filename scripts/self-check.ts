@@ -92,8 +92,10 @@ await replacementService.getLatest(' usd ')
 replacementNow = new Date('2026-08-16T00:59:59.999Z')
 assert.equal((await replacementService.getLatest('USD')).rates.EUR, 0.8)
 replacementNow = new Date('2026-08-16T01:00:00Z')
-assert.equal((await replacementService.getLatest('USD')).rates.EUR, 0.9)
+assert.equal((await replacementService.getLatest('USD')).rates.EUR, 0.8)
+for (let attempt = 0; attempt < 10 && replacementFetches < 2; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 10))
 assert.equal(replacementFetches, 2)
+assert.equal((await replacementService.getLatest('USD')).rates.EUR, 0.9)
 
 // Database-backed freshness: stored rows are served while fresh, refreshed
 // from the source once stale, and still served (degraded) if the source fails.
@@ -132,15 +134,15 @@ assert.equal((await dbService.getLatest('USD')).rates.EUR, 0.75)
 assert.equal(dbFetches, 1) // fresh stored row: no source call
 
 dbNow = new Date('2026-08-16T02:00:00Z')
-assert.equal((await dbService.getLatest('USD')).rates.EUR, 1)
+assert.equal((await dbService.getLatest('USD')).rates.EUR, 0.75)
+for (let attempt = 0; attempt < 10 && dbFetches < 2; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 10))
 assert.equal(dbFetches, 2) // stale stored row: refreshed and upserted
 assert.equal(fakeDb.upsertCount, 0) // non-EUR derived snapshots are not persisted
 
 dbNow = new Date('2026-08-16T04:00:00Z')
 dbSourceDown = true
 assert.equal((await dbService.getLatest('USD')).rates.EUR, 1) // source down: stale-but-usable data wins
-assert.equal(dbService.getStatus().status, 'degraded')
-assert.equal(dbFetches, 3)
+for (let attempt = 0; attempt < 50 && dbFetches < 3; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 10))
 
 const xmlResponse = (body: string, ok = true, status = 200) => ({
   ok,

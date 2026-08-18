@@ -235,7 +235,7 @@ The source code cannot create your VPS, database, DNS, TLS certificate, secrets,
 bun run deploy:worker
 ```
 
-Requires `wrangler secret put DATABASE_URL` (a TLS-capable Postgres such as Neon; plain TCP works, Hyperdrive recommended for production). The same daily refresh and hourly rollup run through the `scheduled` handler and the cron triggers in `wrangler.jsonc`. For local preview, `bun run preview:worker` uses `.dev.vars` (see `.dev.vars.example`).
+Requires `wrangler secret put DATABASE_URL` and Cloudflare Hyperdrive or another Workers-compatible Postgres transport; ordinary postgres.js TCP sockets are not supported in every Workers runtime. Validate DB, telemetry, forecast, and dashboard paths with `wrangler dev` before production. The same daily refresh and hourly rollup run through the `scheduled` handler and the cron triggers in `wrangler.jsonc`. For local preview, `bun run preview:worker` uses `.dev.vars` (see `.dev.vars.example`).
 
 Node is also available as a build target (`DEPLOY_TARGET=node`) but needs `@hono/node-server` installed and does not register the cron — drive `createDailyRateFetcher` from system cron instead.
 

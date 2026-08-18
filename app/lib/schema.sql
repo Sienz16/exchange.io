@@ -44,3 +44,10 @@ CREATE TABLE IF NOT EXISTS api_requests_hourly (
   uniques integer NOT NULL,
   PRIMARY KEY (hour_utc, route)
 );
+
+CREATE INDEX IF NOT EXISTS rate_updates_fetched_at_idx ON rate_updates (fetched_at);
+
+CREATE OR REPLACE FUNCTION prune_exchange_rollups() RETURNS void LANGUAGE sql AS $$
+  DELETE FROM api_requests_hourly WHERE hour_utc < now() - interval '2 years';
+  DELETE FROM rate_updates WHERE fetched_at < now() - interval '2 years';
+$$;

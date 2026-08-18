@@ -76,7 +76,7 @@ export default createRoute((c) => {
             <a href="/playground" className="hidden sm:inline">Converter</a>
             <ThemeToggle />
             <a className="rounded-lg border border-accent-strong/45 px-3.5 py-2.5 text-accent-strong transition-colors hover:bg-accent hover:text-on-accent" href="/#api">API <span aria-hidden="true">↗</span></a>
-          </nav>
+          </nav><details className="relative sm:hidden"><summary className="list-none rounded-lg border border-line px-3 py-2 font-mono text-xs">Menu</summary><nav className="absolute right-0 top-12 z-50 grid min-w-40 gap-3 rounded-lg border border-line bg-panel p-4 font-mono text-xs"><a href="/#why">Why</a><a href="/playground">Converter</a><a href="/docs">Docs</a></nav></details>
         </div>
       </header>
 

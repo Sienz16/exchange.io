@@ -18,7 +18,7 @@ export default createRoute((c) => {
   const origin = requestOrigin(c)
 
   return c.render(
-    <main className="overflow-x-clip">
+    <><a href="#why" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:bg-accent focus:px-4 focus:py-2">Skip to content</a><main className="overflow-x-clip">
       <header className="sticky top-0 z-50 border-b border-line bg-[var(--header-bg)] backdrop-blur-xl">
         <div className={page + ' flex min-h-16 items-center justify-between'}>
           <a className="font-display text-[1.12rem] font-bold tracking-[-.05em]" href="/">exchange<span className="text-accent-strong">.io</span></a>
@@ -28,7 +28,7 @@ export default createRoute((c) => {
             <a className="hidden sm:inline" href="/docs">Docs</a>
             <ThemeToggle />
             <a className="rounded-lg border border-accent-strong/45 px-3.5 py-2.5 text-accent-strong transition-colors hover:bg-accent hover:text-on-accent" href="/playground">Converter <span aria-hidden="true">↗</span></a>
-          </nav>
+          </nav><details className="relative sm:hidden"><summary className="list-none rounded-lg border border-line px-3 py-2 font-mono text-xs">Menu</summary><nav className="absolute right-0 top-12 z-50 grid min-w-40 gap-3 rounded-lg border border-line bg-panel p-4 font-mono text-xs"><a href="#why">Why</a><a href="#capabilities">Capabilities</a><a href="/docs">Docs</a></nav></details>
         </div>
       </header>
 
@@ -232,7 +232,7 @@ export default createRoute((c) => {
       </footer>
 
       <ScrollFx />
-    </main>,
+    </main></>,
     { title: 'exchange.io — Know what money means', description: 'Clean currency exchange rates, history, conversion, and forecasts through a small public API. 30 currencies, no API key.' },
   )
 })

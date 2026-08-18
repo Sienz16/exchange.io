@@ -143,6 +143,7 @@ await counted.getLatest('EUR')
 assert.equal(counted.getCacheStats().cache_hit, 1)
 counterClock = new Date('2026-08-16T01:05:00Z')
 await counted.getLatest('EUR') // everything stale: live refetch
+for (let attempt = 0; attempt < 20 && counted.getCacheStats().live_fetch < 2; attempt += 1) await new Promise((resolve) => setTimeout(resolve, 10))
 assert.equal(counted.getCacheStats().live_fetch, 2)
 
 const dbOnly = createRateService(async () => { throw new Error('source down') }, () => new Date('2026-08-16T01:10:00Z'), counterDb)

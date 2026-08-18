@@ -193,7 +193,7 @@ export const currencyMeta: Record<string, CurrencyMeta> = Object.fromEntries(
   Object.entries({ ...entries, ...overrides }).map(([code, [name, country, cc]]) => [
     code,
     // Override entries already carry a glyph in place of the country code.
-    { name, country, flag: cc.length === 2 ? regionalFlag(cc) : cc },
+     { name, country, flag: cc.length === 2 ? `${cc.toUpperCase()} ` : cc },
   ]),
 )
 

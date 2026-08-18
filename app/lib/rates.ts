@@ -23,6 +23,7 @@ function normalizeBase(base: string): string {
 export function createRateService(source: Source = withFallback(fetchLatestRates, fetchFrankfurterRates), clock: Clock = () => new Date(), database: Database = getDatabase()) {
   const cache = new Map<string, RateSnapshot>()
   const pending = new Map<string, Promise<RateSnapshot>>()
+  const pendingDb = new Map<string, Promise<RateSnapshot | null>>()
   let status: RateServiceStatus = 'configured'
   let checkedAt: string | null = null
   const cacheStats = { live_fetch: 0, db_read: 0, cache_hit: 0, stale_fallback: 0 }
@@ -45,15 +46,29 @@ export function createRateService(source: Source = withFallback(fetchLatestRates
       return cached as RateSnapshot
     }
 
+    if (cached) {
+      if (!pending.has(key)) void refreshLatest(key, cached, null)
+      return cached
+    }
+
     // Stored rows are only served while fresh; a stale row means the daily
     // job missed a refresh, so the live source rehydrates and upserts here.
-    const stored = database ? await database.getLatest(key) : null
+    const dbRead = pendingDb.get(key) ?? (database ? database.getLatest(key) : Promise.resolve(null))
+    pendingDb.set(key, dbRead)
+    const stored = await dbRead
+    pendingDb.delete(key)
     if (isFresh(stored, now)) {
       cacheStats.db_read += 1
       cache.set(key, stored as RateSnapshot)
       return stored as RateSnapshot
     }
 
+    const existing = pending.get(key)
+    if (existing) return existing
+    return await refreshLatest(key, cached, stored)
+  }
+
+  async function refreshLatest(key: string, cached: RateSnapshot | undefined, stored: RateSnapshot | null): Promise<RateSnapshot> {
     const existing = pending.get(key)
     if (existing) return existing
     const refresh = (async () => {
@@ -81,11 +96,7 @@ export function createRateService(source: Source = withFallback(fetchLatestRates
       return snapshot
     })()
     pending.set(key, refresh)
-    try {
-      return await refresh
-    } finally {
-      pending.delete(key)
-    }
+    try { return await refresh } finally { pending.delete(key) }
   }
 
   async function getHistorical(date: string, base: string): Promise<RateResult> {
