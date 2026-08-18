@@ -3,5 +3,7 @@
   "extends": ["config:recommended"],
   "schedule": ["before 5am on Monday"],
   "rangeStrategy": "pin",
+  "docker": { "enabled": true },
+  "packageRules": [{ "matchManagers": ["dockerfile"], "pinDigests": true }],
   "lockFileMaintenance": { "enabled": true, "schedule": ["before 5am on Monday"] }
 }

@@ -101,6 +101,7 @@ export function createRequestRecorder(writer: AnalyticsWriter | null, options: {
       else ensureTimer()
     },
     flushAll: flush,
+    shutdown: async () => { if (timer != null) clearInterval(timer); timer = null; await flush() },
   }
 }
 

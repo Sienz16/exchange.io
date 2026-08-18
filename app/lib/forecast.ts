@@ -21,8 +21,9 @@ export function forecastFromHistory(input: ForecastInput, history: PairRateRow[]
     ? values.slice(-WINDOW).reduce((sum, value) => sum + value, 0) / WINDOW
     : values[values.length - 1]
   const recent = values.slice(-WINDOW)
-  const slope = recent.length > 1 ? (recent[recent.length - 1] - recent[0]) / (recent.length - 1) : 0
-  const estimate = values.length >= WINDOW ? baseline + slope * ((input.horizon + 1) / 2) : baseline
+  const days = recent.length > 1 ? Math.max(1, (Date.parse(usable[usable.length - 1].date) - Date.parse(usable[usable.length - recent.length].date)) / 86_400_000) : 1
+  const slopePerDay = recent.length > 1 ? (recent[recent.length - 1] - recent[0]) / days : 0
+  const estimate = values.length >= WINDOW ? baseline + slopePerDay * ((input.horizon + 1) / 2) : baseline
   const recentErrors = usable.slice(-Math.max(WINDOW, 30))
   const errors = recentErrors.length > 1
     ? recentErrors.slice(1).map((row, index) => row.rate - recentErrors[index].rate)

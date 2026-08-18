@@ -1,9 +1,11 @@
 import { showRoutes } from 'hono/dev'
 import { createApp } from 'honox/server'
-import { runRollup } from './lib/analytics'
+import { createRequestRecorder, getAnalyticsWriter, runRollup } from './lib/analytics'
 import { runDailyRateFetch } from './lib/jobs/fetch-rates'
 
 const app = createApp()
+const telemetry = createRequestRecorder(getAnalyticsWriter())
+if (typeof process !== 'undefined') process.once('beforeExit', () => { void telemetry.shutdown() })
 const securityHeaders: Record<string, string> = {
   'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; frame-ancestors 'none'",
   'X-Frame-Options': 'DENY',
