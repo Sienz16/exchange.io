@@ -53,7 +53,7 @@ Prefer to click first? The built-in [playground](http://localhost:5173/playgroun
 
 ## API
 
-OpenAPI 3.1 specification: [`public/openapi.yaml`](public/openapi.yaml). Replace its example server URL before publishing generated client documentation.
+OpenAPI 3.1 specification: [`public/openapi.yaml`](public/openapi.yaml). The interactive [docs page](/docs) includes endpoint parameters and examples.
 
 | Endpoint | What it does | Example |
 | --- | --- | --- |
@@ -192,6 +192,8 @@ For production, managed PostgreSQL or a separately operated database is preferre
 The application includes portable app-level protection: a bounded in-memory limit of 120 API requests per client IP per minute, cache headers for successful API responses, request-refresh single-flight protection, and truthful health status. Put a reverse proxy in front of the app for TLS, stronger edge rate limits, request size limits, and access logs.
 
 The in-memory limiter is intentionally safe for one app process only. If running multiple app instances, enforce the public limit at the shared reverse proxy/load balancer, or replace `app/lib/rate-limit.ts` with a shared-store implementation (for example, Redis or PostgreSQL advisory/row-based counters). Do not assume each instance's local limiter adds up to one global limit.
+
+For scaled deployments, provide `globalThis.exchangeRateLimitStore` with async `check(key, limit, windowMs)` to enforce one shared bucket across instances. Local memory remains default when no store is provided.
 
 1. Create a PostgreSQL database with TLS enabled and a dedicated application user.
 2. Apply schema and seed history:

@@ -8,6 +8,7 @@ type Conversion = {
   from: string; to: string; amount: number; result: number; rate: number
   rate_date: string; source: string; fetched_at: string
 }
+type Endpoint = 'convert' | 'latest' | 'historical' | 'timeseries' | 'fluctuation' | 'batch-convert'
 
 const fallbackCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'INR', 'SGD', 'VND']
 const zeroDecimal = new Set(['BIF', 'CLP', 'DJF', 'GNF', 'ISK', 'JPY', 'KMF', 'KRW', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'])
@@ -30,6 +31,8 @@ export default function Playground({ compact = false, origin = '' }: { compact?:
   const [amount, setAmount] = useState('100')
   const [from, setFrom] = useState('USD')
   const [to, setTo] = useState('EUR')
+  const [date, setDate] = useState('')
+  const [endpoint, setEndpoint] = useState<Endpoint>('convert')
   const [data, setData] = useState<Conversion | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -40,6 +43,11 @@ export default function Playground({ compact = false, origin = '' }: { compact?:
   const id = (name: string) => (compact ? `compact-${name}` : name)
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setFrom(params.get('from')?.toUpperCase() || 'USD')
+    setTo(params.get('to')?.toUpperCase() || 'EUR')
+    setAmount(params.get('amount') || '100')
+    setDate(params.get('date') || '')
     fetch('/api/currencies').then((response) => response.json() as Promise<{ currencies?: Array<{ code: string; decimals: number }> }>).then((body) => {
       if (body.currencies?.length) setCurrencies(body.currencies.map(({ code }) => code))
     }).catch(() => undefined)
@@ -51,10 +59,18 @@ export default function Playground({ compact = false, origin = '' }: { compact?:
   const siteOrigin = origin || (typeof window === 'undefined' ? '' : window.location.origin)
   const curl = `curl "${siteOrigin}/api/convert?from=${from}&to=${to}&amount=${amount || '0'}"`
 
+  useEffect(() => {
+    const params = new URLSearchParams({ from, to, amount })
+    if (date) params.set('date', date)
+    window.history.replaceState(null, '', `${window.location.pathname}?${params}`)
+  }, [from, to, amount, date])
+
   async function convert() {
     setBusy(true); setError('')
     try {
-      const response = await fetch(`/api/convert?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&amount=${encodeURIComponent(amount)}`)
+      const dateParam = date ? `&date=${encodeURIComponent(date)}` : ''
+      const path = endpoint === 'convert' ? `/api/convert?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&amount=${encodeURIComponent(amount)}${dateParam}` : endpoint === 'latest' ? `/api/latest?base=${from}` : endpoint === 'historical' ? `/api/historical?date=${encodeURIComponent(date || '2024-01-01')}&base=${from}` : endpoint === 'batch-convert' ? `/api/batch-convert?from=${from}&to=${to},GBP,JPY&amount=${amount}` : endpoint === 'timeseries' ? `/api/timeseries?start=${encodeURIComponent(date || '2024-01-01')}&end=${encodeURIComponent(date || '2024-01-31')}&base=${from}` : `/api/fluctuation?start=${encodeURIComponent(date || '2024-01-01')}&end=${encodeURIComponent(date || '2024-01-31')}&base=${from}`
+      const response = await fetch(path)
       const body = await response.json() as Conversion & { message?: string }
       if (!response.ok) throw new Error(body.message || 'Conversion unavailable')
       setData(body)
@@ -126,8 +142,12 @@ export default function Playground({ compact = false, origin = '' }: { compact?:
             <CurrencyPicker id={id('to')} value={to} currencies={currencies} onChange={setTo} />
           </div>
         </div>
-        <p id={id('amount-help')} className="mt-3.5 font-mono text-[.62rem] tracking-[.04em] text-faint">Daily reference snapshot · updates as you type</p>
-        <button type="button" onClick={convert} disabled={busy}
+         <label htmlFor={id('date')} className="mt-4 font-mono text-[.62rem] uppercase tracking-[.14em] text-faint">Historical date (optional)</label>
+         <input id={id('date')} type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-2 rounded-lg border border-line bg-recess px-3 py-2 font-mono text-[.72rem] text-fg" />
+         <p id={id('amount-help')} className="mt-3.5 font-mono text-[.62rem] tracking-[.04em] text-faint">Daily reference snapshot · updates as you type</p>
+       <label htmlFor={id('endpoint')} className="mt-4 font-mono text-[.62rem] uppercase tracking-[.14em] text-faint">Endpoint</label>
+       <select id={id('endpoint')} value={endpoint} onChange={(event) => setEndpoint(event.target.value as Endpoint)} className="mt-2 rounded-lg border border-line bg-recess px-3 py-2 font-mono text-[.72rem] text-fg"><option value="convert">Convert</option><option value="latest">Latest</option><option value="historical">Historical</option><option value="timeseries">Timeseries</option><option value="fluctuation">Fluctuation</option><option value="batch-convert">Batch convert</option></select>
+       <button type="button" onClick={convert} disabled={busy}
           className="mt-[22px] flex w-full items-center justify-center gap-2.5 rounded-[10px] bg-accent px-[18px] py-[15px] font-mono text-[.76rem] font-semibold uppercase tracking-[.1em] text-on-accent transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_40px_-14px_var(--color-accent)] disabled:cursor-wait disabled:opacity-55 motion-reduce:transition-none motion-reduce:hover:translate-y-0">
           {busy ? <Loader2 className="animate-spin" aria-hidden="true" size={15} /> : null}
           {busy ? 'Converting' : 'Convert'} <span aria-hidden="true">→</span>

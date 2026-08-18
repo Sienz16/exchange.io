@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#05070c"/>
+  <circle cx="930" cy="120" r="280" fill="#d4f74f" opacity=".08"/>
+  <text x="90" y="270" fill="#f6f5f0" font-family="Arial, sans-serif" font-size="82" font-weight="700">exchange<tspan fill="#d4f74f">.io</tspan></text>
+  <text x="96" y="350" fill="#a3b0c8" font-family="monospace" font-size="25">NO-KEY CURRENCY API · DAILY REFERENCE RATES</text>
+  <text x="96" y="410" fill="#d4f74f" font-family="monospace" font-size="20">HISTORY BACK TO 1999 · PROVENANCE ON EVERY NUMBER</text>
+</svg>

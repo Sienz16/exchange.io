@@ -6,7 +6,8 @@ import { createRateLimiter } from '../../lib/rate-limit'
 const recorder = createRequestRecorder(getAnalyticsWriter(), {
   onError: (error) => console.error('analytics flush failed:', error),
 })
-const limiter = createRateLimiter({ limit: 120, windowMs: 60_000 })
+const sharedStore = (globalThis as typeof globalThis & { exchangeRateLimitStore?: import('../../lib/rate-limit').SharedRateLimitStore }).exchangeRateLimitStore
+const limiter = createRateLimiter({ limit: 120, windowMs: 60_000, store: sharedStore })
 const API_RATE_LIMIT = 120
 
 /** Records every completed API request; never breaks the response it measures. */
@@ -29,7 +30,7 @@ const apiTelemetry: MiddlewareHandler = async (c, next) => {
 
 const apiRateLimit: MiddlewareHandler = async (c, next) => {
   if (c.req.path === '/api/health' || c.req.method === 'OPTIONS') return next()
-  const result = limiter.check(clientIp(c.req.raw.headers))
+  const result = sharedStore ? await limiter.checkShared(clientIp(c.req.raw.headers)) : limiter.check(clientIp(c.req.raw.headers))
   c.header('X-RateLimit-Limit', String(API_RATE_LIMIT))
   c.header('X-RateLimit-Remaining', String(result.remaining))
   c.header('X-RateLimit-Reset', String(Math.ceil(Date.now() / 1000) + result.retryAfter))

@@ -55,6 +55,12 @@ const extraEndpoints: Array<{ method: string; path: string; title: string; descr
   { method: 'GET', path: '/api/currencies', title: 'Supported currencies', description: 'List supported currency codes with display precision. Response also includes latest source metadata.', example: '/api/currencies' },
   { method: 'GET', path: '/api/forecast?from=USD&to=EUR&horizon=7', title: 'Forecast', description: 'Return an experimental baseline estimate and range for 1 to 30 days. Response includes model version, training date, and a mandatory disclaimer.', example: '/api/forecast?from=USD&to=EUR&horizon=7' },
   { method: 'GET', path: '/api/health', title: 'Health', description: 'Check API availability and rate-service state. Useful for monitoring, not for selecting a rate.', example: '' },
+  { method: 'GET', path: '/api/timeseries?start=2024-01-01&end=2024-01-31&base=USD', title: 'Time series', description: 'Return daily rates across an inclusive date range. Add symbols to reduce the response.', example: '/api/timeseries?start=2024-01-01&end=2024-01-31&base=USD&symbols=EUR,JPY' },
+  { method: 'GET', path: '/api/fluctuation?start=2024-01-01&end=2024-01-31&base=USD', title: 'Fluctuation', description: 'Return start, end, absolute, and percentage changes for each available symbol.', example: '/api/fluctuation?start=2024-01-01&end=2024-01-31&base=USD' },
+  { method: 'GET', path: '/api/batch-convert?from=USD&to=EUR,GBP&amount=100', title: 'Batch convert', description: 'Convert one amount to multiple target currencies.', example: '/api/batch-convert?from=USD&to=EUR,GBP&amount=100' },
+  { method: 'GET', path: '/api/metadata', title: 'Currency metadata', description: 'Return names, countries, flags, and symbols for currency codes.', example: '/api/metadata' },
+  { method: 'GET', path: '/api/coverage', title: 'Coverage', description: 'Return earliest/latest stored dates, data sources, and refresh schedule.', example: '/api/coverage' },
+  { method: 'GET', path: '/api/backtest?from=USD&to=EUR', title: 'Forecast backtest', description: 'Return rolling forecast point count and mean absolute error for a pair.', example: '/api/backtest?from=USD&to=EUR' },
 ]
 
 export default createRoute((c) => {
@@ -94,7 +100,10 @@ export default createRoute((c) => {
             <p className="m-0 font-mono text-[.66rem] font-medium uppercase tracking-[.16em] text-faint">START HERE</p>
             <h2 className={sectionHeading}>One request.<br /><em className={em}>Readable output.</em></h2>
           <p className="max-w-[660px] leading-[1.8] text-muted">No key is required. Send query parameters over HTTPS and read JSON back. Amounts are numeric, currency codes are uppercase ISO 4217-style codes, and every rate response identifies its source and dates. Rates come from the <a className="underline" href="https://www.ecb.europa.eu/services/disclaimer/html/index.en.html" rel="noopener noreferrer" target="_blank">European Central Bank</a>; non-EUR bases are derived from ECB EUR references by exchange.io.</p>
-            <pre className={codeBlock}><code>{curl('/api/convert?from=USD&to=EUR&amount=100')}</code></pre>
+           <pre className={codeBlock}><code>{curl('/api/convert?from=USD&to=EUR&amount=100')}</code></pre>
+             <div className="grid gap-3 sm:grid-cols-3">
+               {[['curl', curl('/api/convert?from=USD&to=EUR&amount=100')], ['fetch', "fetch('/api/convert?from=USD&to=EUR&amount=100').then(r => r.json())"], ['Python', "requests.get('/api/convert', params={'from':'USD','to':'EUR','amount':100}).json()"]].map(([label, snippet]) => <div key={label} className="rounded-lg border border-line bg-panel p-3"><p className="font-mono text-[.62rem] uppercase text-faint">{label}</p><code className="mt-2 block overflow-x-auto text-[.7rem] text-muted">{snippet}</code><button type="button" className="mt-2 font-mono text-[.62rem] text-accent-strong" onClick={() => typeof navigator !== 'undefined' && navigator.clipboard?.writeText(snippet)}>Copy</button></div>)}
+             </div>
             <p className="text-[.8rem] text-faint">Free during this early access period. Add caching on your side when your workload does not need a fresh snapshot per request.</p>
           </section>
 
@@ -171,7 +180,13 @@ export default createRoute((c) => {
             </div>
           </section>
 
-          <section id="roadmap" className="grid gap-8 py-21 lg:grid-cols-[1fr_1.5fr] lg:gap-[8%]">
+           <section className="border-b border-line py-21">
+             <p className="m-0 font-mono text-[.66rem] font-medium uppercase tracking-[.16em] text-faint">REFERENCE</p>
+             <h2 className={sectionHeading}>Parameter<br /><em className={em}>shapes.</em></h2>
+             <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b border-line text-faint"><th className="py-3 pr-5">Parameter</th><th className="py-3 pr-5">Type</th><th className="py-3">Meaning</th></tr></thead><tbody>{[['base','string','ISO 4217 base currency; defaults to USD.'],['symbols','comma list','Optional response filter.'],['start/end','YYYY-MM-DD','Inclusive date range for timeseries and fluctuation.'],['amount','positive number','Conversion amount, maximum 1e12.'],['date','YYYY-MM-DD','Historical conversion date.']].map(([name, type, meaning]) => <tr key={name} className="border-b border-line"><td className="py-3 pr-5"><code>{name}</code></td><td className="py-3 pr-5 text-faint">{type}</td><td className="py-3 text-muted">{meaning}</td></tr>)}</tbody></table></div>
+           </section>
+
+           <section id="roadmap" className="grid gap-8 py-21 lg:grid-cols-[1fr_1.5fr] lg:gap-[8%]">
             <div>
               <p className="m-0 font-mono text-[.66rem] font-medium uppercase tracking-[.16em] text-faint">05 / NEXT</p>
               <h2 className={sectionHeading}>What comes<br /><em className={em}>after v1.</em></h2>

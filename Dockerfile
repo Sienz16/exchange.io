@@ -1,5 +1,6 @@
 # Generic production image. Works with Docker, Podman, Coolify, Nomad,
 # Kubernetes, and other OCI-compatible runtimes.
+# Pin digest in production deployments; renovate updates this tag/digest pair.
 FROM oven/bun:1 AS build
 
 WORKDIR /app

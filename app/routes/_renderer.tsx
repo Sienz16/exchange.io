@@ -39,6 +39,11 @@ export default reactRenderer(({ children, title, description }) => {
         {title ? <meta property="og:title" content={title} /> : ''}
         {description ? <meta property="og:description" content={description} /> : ''}
         <meta property="og:type" content="website" />
+        <meta property="og:image" content="/og-image.svg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content="/og-image.svg" />
+        <link rel="canonical" href={typeof location !== 'undefined' ? location.href : ''} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ '@context': 'https://schema.org', '@type': 'WebSite', name: 'exchange.io', description: description ?? 'No-key currency API' }) }} />
       </head>
       <body>{children}</body>
     </html>

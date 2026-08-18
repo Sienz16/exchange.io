@@ -2,7 +2,7 @@ import { getDatabase, type PairRateRow } from './db'
 import type { ForecastResult } from './types'
 
 const WINDOW = 7
-const MODEL_VERSION = 'trend-blend-v2'
+const MODEL_VERSION = 'trend-blend-v3'
 const DISCLAIMER = 'Estimate only; not financial advice or a trading signal.'
 const HISTORY_LIMIT = 5000
 const CACHE_TTL_MS = 5 * 60 * 1000
@@ -23,8 +23,9 @@ export function forecastFromHistory(input: ForecastInput, history: PairRateRow[]
   const recent = values.slice(-WINDOW)
   const slope = recent.length > 1 ? (recent[recent.length - 1] - recent[0]) / (recent.length - 1) : 0
   const estimate = values.length >= WINDOW ? baseline + slope * ((input.horizon + 1) / 2) : baseline
-  const errors = values.length > 1
-    ? values.slice(1).map((value, index) => value - values[index])
+  const recentErrors = usable.slice(-Math.max(WINDOW, 30))
+  const errors = recentErrors.length > 1
+    ? recentErrors.slice(1).map((row, index) => row.rate - recentErrors[index].rate)
     : []
   const meanError = errors.length ? errors.reduce((sum, value) => sum + value, 0) / errors.length : 0
   const deviation = errors.length
@@ -38,7 +39,7 @@ export function forecastFromHistory(input: ForecastInput, history: PairRateRow[]
     estimate,
     lower: Math.max(Number.MIN_VALUE, estimate - margin),
     upper: estimate + margin,
-    model_version: values.length >= WINDOW ? MODEL_VERSION : 'seasonal-naive-v1',
+    model_version: values.length >= WINDOW ? MODEL_VERSION : 'seasonal-naive-v3',
     training_date: usable[usable.length - 1].date,
     horizon: input.horizon,
     disclaimer: DISCLAIMER,

@@ -1,0 +1,11 @@
+# exchange.io
+
+No-key currency API with daily ECB reference rates, history back to 1999, conversion, time series, fluctuation, forecasts, and provenance metadata.
+
+Docs: /docs
+OpenAPI: /openapi.yaml
+Latest: /api/latest?base=USD
+Convert: /api/convert?from=USD&to=EUR&amount=100
+Timeseries: /api/timeseries?start=2024-01-01&end=2024-01-31&base=USD
+
+Rates are reference data, not financial advice.

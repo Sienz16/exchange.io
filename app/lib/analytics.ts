@@ -199,8 +199,8 @@ export async function getDashboardStats(sql: Sql): Promise<DashboardStats> {
     sql`SELECT coalesce(sum(requests), 0)::int AS n FROM api_requests_hourly WHERE hour_utc >= now() - interval '30 days'`,
     sql`SELECT to_char(hour_utc AT TIME ZONE 'UTC', ${HOUR_LABEL}) AS hour, sum(requests)::int AS requests, sum(errors)::int AS errors
         FROM api_requests_hourly WHERE hour_utc >= now() - interval '48 hours' GROUP BY 1`,
-    sql`SELECT to_char(date_trunc('hour', ts) AT TIME ZONE 'UTC', ${HOUR_LABEL}) AS hour, count(*)::int AS requests, count(*) FILTER (WHERE status >= 400)::int AS errors
-        FROM api_requests WHERE ts >= date_trunc('hour', now()) GROUP BY 1`,
+     sql`SELECT to_char(date_trunc('hour', ts) AT TIME ZONE 'UTC', ${HOUR_LABEL}) AS hour, count(*)::int AS requests, count(*) FILTER (WHERE status >= 400)::int AS errors
+         FROM api_requests WHERE ts >= date_trunc('hour', now()) - interval '1 hour' GROUP BY 1`,
     sql`SELECT route, count(*)::int AS requests FROM api_requests WHERE ts >= now() - interval '24 hours' GROUP BY 1 ORDER BY 2 DESC LIMIT 6`,
     sql`SELECT pair, count(*)::int AS requests FROM api_requests WHERE pair IS NOT NULL AND ts >= now() - interval '24 hours' GROUP BY 1 ORDER BY 2 DESC LIMIT 6`,
     sql`SELECT coalesce(referer_domain, '(direct)') AS domain, count(*)::int AS requests FROM api_requests WHERE ts >= now() - interval '24 hours' GROUP BY 1 ORDER BY 2 DESC LIMIT 6`,

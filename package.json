@@ -9,7 +9,7 @@
     "preview:worker": "bun run build:worker && wrangler dev",
     "deploy:worker": "bun run build:worker && wrangler deploy",
     "typecheck": "tsc --noEmit",
-    "check": "bun run scripts/self-check.ts && bun run scripts/forecast-self-check.ts && bun run scripts/task-4-self-check.ts && bun run scripts/task-5-self-check.ts && bun run scripts/api-self-check.ts && bun run scripts/admin-self-check.ts && bun run scripts/hardening-self-check.ts"
+    "check": "bun run scripts/self-check.ts && bun run scripts/forecast-self-check.ts && bun run scripts/task-4-self-check.ts && bun run scripts/task-5-self-check.ts && bun run scripts/api-self-check.ts && bun run scripts/admin-self-check.ts && bun run scripts/hardening-self-check.ts && bun test scripts/*.test.ts"
   },
   "private": true,
   "dependencies": {
