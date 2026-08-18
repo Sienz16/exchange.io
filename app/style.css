@@ -131,3 +131,14 @@
     html { scroll-behavior: auto; }
   }
 }
+
+@layer components {
+  .reveal-ready { opacity: 0; transform: translateY(30px); transition: opacity .9s ease-out var(--reveal-delay, 0s), transform .9s ease-out var(--reveal-delay, 0s); }
+  .reveal-ready.is-revealed { opacity: 1; transform: translateY(0); }
+  .theme-icon { display: inline-flex; }
+  .motion-panel { animation: panel-in .16s ease-out both; }
+  .motion-result { animation: result-in .28s ease-out both; }
+  @keyframes panel-in { from { opacity: 0; transform: translateY(-6px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes result-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  @media (prefers-reduced-motion: reduce) { .reveal-ready, .motion-panel, .motion-result { animation: none; opacity: 1; transform: none; transition: none; } }
+}

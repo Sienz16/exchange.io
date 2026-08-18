@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
 import { Moon, Sun } from 'lucide-react'
 
 type Theme = 'light' | 'dark'
@@ -39,10 +38,8 @@ export default function ThemeToggle() {
     aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
     aria-pressed={theme === 'light'}
     className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-muted transition-colors hover:border-accent-strong hover:text-accent-strong">
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.span key={theme ?? 'unknown'} initial={{ opacity: 0, rotate: -60 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: 60 }} transition={{ duration: 0.2 }}>
+    <span className="theme-icon transition-transform duration-200 motion-reduce:transition-none">
         {theme === 'light' ? <Moon aria-hidden="true" size={15} strokeWidth={1.8} /> : <Sun aria-hidden="true" size={15} strokeWidth={1.8} />}
-      </motion.span>
-    </AnimatePresence>
+    </span>
   </button>
 }

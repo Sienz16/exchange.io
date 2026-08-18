@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { AnimatePresence, animate, motion, useMotionValue, useTransform } from 'motion/react'
 import { ArrowDownUp, Check, ChevronDown, Loader2, Search } from 'lucide-react'
 import { metaFor, symbolFor } from '../lib/currency-meta'
 import { cn } from '../lib/utils'
@@ -133,9 +132,9 @@ export default function Playground({ compact = false, origin = '' }: { compact?:
           </div>
           <button type="button" onClick={swap} aria-label={`Swap ${from} and ${to}`}
             className="relative z-[2] mb-[-18px] mt-[-18px] mr-[2px] flex h-9 w-9 self-end items-center justify-center rounded-full border border-line2 bg-recess text-muted transition-colors hover:border-accent-strong hover:text-accent-strong">
-            <motion.span animate={{ rotate: swapped ? 180 : 0 }} transition={{ type: 'spring', stiffness: 320, damping: 22 }}>
-              <ArrowDownUp aria-hidden="true" size={15} strokeWidth={2} />
-            </motion.span>
+             <span className={cn('transition-transform duration-300 motion-reduce:transition-none', swapped && 'rotate-180')}>
+               <ArrowDownUp aria-hidden="true" size={15} strokeWidth={2} />
+             </span>
           </button>
           <div className={cn(fieldRow, 'relative')}>
             <span className={fieldLabel}>TO</span>
@@ -170,10 +169,7 @@ export default function Playground({ compact = false, origin = '' }: { compact?:
           <span className="mr-2.5 inline-block h-[7px] w-[7px] rounded-full bg-accent shadow-[0_0_0_3px_rgba(212,247,79,0.15)]" />
           {data ? 'LIVE RESULT' : 'AWAITING QUERY'}
         </div>
-        <AnimatePresence mode="wait">
-          <motion.div key={data ? `${data.from}-${data.to}-${data.rate_date}` : 'empty'}
-            initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.28, ease: 'easeOut' }}
-            className="mt-[22px]">
+         <div key={data ? `${data.from}-${data.to}-${data.rate_date}` : 'empty'} className="motion-result mt-[22px]">
             {data
               ? <>
                 <div className="flex flex-wrap items-baseline gap-3.5 font-display text-[clamp(2.5rem,4.4vw,3.9rem)] font-bold leading-none tracking-[-.02em] tabular-nums">
@@ -200,8 +196,7 @@ export default function Playground({ compact = false, origin = '' }: { compact?:
                 </p>
               </>
               : <div className="font-display text-[clamp(2.5rem,4.4vw,3.9rem)] font-bold leading-none tracking-[-.02em] text-faint">—</div>}
-          </motion.div>
-        </AnimatePresence>
+         </div>
         <dl className="mt-7 grid grid-cols-3 gap-3.5">
           <div className="border-t border-line pt-3">
             <dt className="font-mono text-[.58rem] font-medium uppercase tracking-[.14em] text-faint">RATE DATE</dt>
@@ -245,17 +240,24 @@ export default function Playground({ compact = false, origin = '' }: { compact?:
 }
 
 function AnimatedNumber({ value, decimals }: { value: number; decimals: number }) {
-  const current = useMotionValue(value)
-  const text = useTransform(current, (latest) => formatAmount(latest, decimals))
-  const initial = useRef(true)
+  const [display, setDisplay] = useState(value)
+  const previous = useRef(value)
 
   useEffect(() => {
-    if (initial.current) { initial.current = false; current.set(value); return }
-    const controls = animate(current, value, { duration: 0.6, ease: [0.16, 1, 0.3, 1] })
-    return () => controls.stop()
-  }, [value, current])
+    const start = previous.current
+    const started = performance.now()
+    let frame = 0
+    const tick = (now: number) => {
+      const progress = Math.min((now - started) / 600, 1)
+      setDisplay(start + (value - start) * (1 - Math.pow(1 - progress, 3)))
+      if (progress < 1) frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    previous.current = value
+    return () => cancelAnimationFrame(frame)
+  }, [value])
 
-  return <motion.span>{text}</motion.span>
+  return <span>{formatAmount(display, decimals)}</span>
 }
 
 function matches(code: string, meta: { name: string; country: string }, query: string) {
@@ -304,15 +306,12 @@ function CurrencyPicker({ id, value, currencies, onChange }: { id: string; value
         <span className="font-display text-[1.1rem] font-semibold tracking-[-.01em] group-hover:text-accent-strong">{value}</span>
         <span className="hidden min-w-0 truncate font-mono text-[.62rem] tracking-[.02em] text-faint sm:inline">{selected.name} · {selected.country}</span>
       </span>
-      <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.18 }} className="flex text-faint">
-        <ChevronDown aria-hidden="true" size={16} strokeWidth={1.8} />
-      </motion.span>
+       <span className={cn('flex text-faint transition-transform duration-200 motion-reduce:transition-none', open && 'rotate-180')}>
+         <ChevronDown aria-hidden="true" size={16} strokeWidth={1.8} />
+       </span>
     </button>
-    <AnimatePresence>
-      {open && (
-        <motion.div role="dialog" aria-label={`Choose ${id.startsWith('from') ? 'source' : 'target'} currency`}
-          initial={{ opacity: 0, y: -6, scale: 0.985 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -6, scale: 0.985 }} transition={{ duration: 0.16, ease: 'easeOut' }}
-          className="absolute left-0 top-[calc(100%+8px)] z-40 w-[min(330px,calc(100vw-48px))] overflow-hidden rounded-xl border border-line2 bg-[var(--menu-bg)] shadow-[var(--shadow-menu)]">
+     {open && (
+         <div role="dialog" aria-label={`Choose ${id.startsWith('from') ? 'source' : 'target'} currency`} className="motion-panel absolute left-0 top-[calc(100%+8px)] z-40 w-[min(330px,calc(100vw-48px))] overflow-hidden rounded-xl border border-line2 bg-[var(--menu-bg)] shadow-[var(--shadow-menu)]">
           <div className="flex items-center gap-2 border-b border-line px-3 py-2.5 text-faint focus-within:border-accent-strong focus-within:text-accent-strong">
             <Search aria-hidden="true" size={14} />
             <input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={onKeyDown}
@@ -337,8 +336,7 @@ function CurrencyPicker({ id, value, currencies, onChange }: { id: string; value
               </button>
             }) : <p className="m-0 p-4 font-mono text-[.7rem] text-faint">No matching currency.</p>}
           </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+         </div>
+     )}
   </div>
 }
