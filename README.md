@@ -271,12 +271,21 @@ The HonoX plugin still passes Vite's deprecated `esbuild` option internally. The
 
 ## Roadmap
 
-- [ ] Per-IP rate limiting (429 + `Retry-After`) — the key pre-launch hardening item
-- [ ] HTTP caching: `Cache-Control` + ETag/304 on API responses
-- [ ] `GET /api/timeseries` and `GET /api/fluctuation`
-- [ ] OpenAPI 3.1 spec + generated SDK snippets
-- [ ] Forecast v2: multi-model competition with published, continuously backtested accuracy
-- [ ] Second upstream source with failover and cross-validation
+Recently shipped:
+
+- [x] Per-IP rate limiting (429 + `Retry-After`) with a pluggable shared-store backend for multi-replica deploys
+- [x] HTTP caching: `Cache-Control` + ETag/304 on API responses
+- [x] `GET /api/timeseries` and `GET /api/fluctuation`, plus batch convert, currency metadata, and data-coverage endpoints
+- [x] OpenAPI 3.1 spec, linked from `/docs`
+- [x] Published forecast backtesting (`GET /api/backtest`)
+- [x] Failover upstream (Frankfurter) with derived-rate fallback
+
+Next:
+
+- [ ] Generated SDKs (npm, PyPI) from the OpenAPI spec
+- [ ] Truly independent second upstream for cross-validation — the current fallback serves ECB-derived data
+- [ ] Forecast v2: multi-model competition with continuously published accuracy
+- [ ] Intraday or streaming rates (today: one daily reference snapshot)
 
 ## Data Sources & Acknowledgements
 

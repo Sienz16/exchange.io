@@ -1,6 +1,7 @@
 import { showRoutes } from 'hono/dev'
 import { createApp } from 'honox/server'
 import { createRequestRecorder, getAnalyticsWriter, runRollup } from './lib/analytics'
+import { readEnv } from './lib/env'
 import { runDailyRateFetch } from './lib/jobs/fetch-rates'
 
 const app = createApp()
@@ -26,7 +27,7 @@ async function fetch(request: Request, env?: {}, ctx?: ExecutionContext): Promis
   return response
 }
 
-if (process.env.NODE_ENV === 'development') showRoutes(app)
+if (readEnv('NODE_ENV') === 'development') showRoutes(app)
 
 const ROLLUP_CRON = '3 * * * *'
 
@@ -38,7 +39,7 @@ const scheduled: ExportedHandlerScheduledHandler = async (event) => {
   const result = await runDailyRateFetch()
   if (result.status === 'error') {
     console.error(JSON.stringify({ event: 'daily_rate_fetch_failed', error: result.error, fetched_at: result.fetched_at }))
-    const webhook = process.env.ALERT_WEBHOOK_URL
+    const webhook = readEnv('ALERT_WEBHOOK_URL')
     if (webhook) await globalThis.fetch(webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'daily_rate_fetch_failed', error: result.error, fetched_at: result.fetched_at }), signal: AbortSignal.timeout(3_000) }).catch(() => undefined)
   }
 }
@@ -49,7 +50,7 @@ const scheduled: ExportedHandlerScheduledHandler = async (event) => {
 // Cloudflare Workers.
 type BunCron = { cron: (schedule: string, callback: () => void | Promise<void>) => void }
 const runtime = globalThis as typeof globalThis & { Bun?: Partial<BunCron> }
-if (typeof runtime.Bun?.cron === 'function' && process.env.NODE_ENV !== 'development') {
+if (typeof runtime.Bun?.cron === 'function' && readEnv('NODE_ENV') !== 'development') {
   runtime.Bun.cron('30 0 * * *', async () => { await runDailyRateFetch() })
   runtime.Bun.cron(ROLLUP_CRON, () => { void runRollup() })
 }
