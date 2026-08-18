@@ -11,10 +11,16 @@ const securityHeaders: Record<string, string> = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
 }
 
+function requestId(request: Request): string {
+  const incoming = request.headers.get('x-request-id')?.trim()
+  return incoming && /^[A-Za-z0-9._-]{1,80}$/.test(incoming) ? incoming : crypto.randomUUID()
+}
+
 async function fetch(request: Request, env?: {}, ctx?: ExecutionContext): Promise<Response> {
   const response = await app.fetch(request, env, ctx)
   for (const [key, value] of Object.entries(securityHeaders)) response.headers.set(key, value)
   if (request.url.includes('/admin')) response.headers.set('X-Robots-Tag', 'noindex, nofollow')
+  response.headers.set('X-Request-ID', requestId(request))
   return response
 }
 

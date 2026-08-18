@@ -51,7 +51,8 @@ export function handleApiError(c: Context, error: unknown) {
 }
 
 export function unknownError(c: Context, error: unknown) {
-  console.error('API request failed:', error)
+  const requestId = c.req.header('x-request-id') ?? 'unknown'
+  console.error(JSON.stringify({ event: 'api_error', request_id: requestId, error: error instanceof Error ? error.message : String(error) }))
   return apiError(c, {
     error: 'service_unavailable',
     message: 'Rate service is unavailable',
