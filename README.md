@@ -63,6 +63,11 @@ OpenAPI 3.1 specification: [`public/openapi.yaml`](public/openapi.yaml). Replace
 | `GET /api/forecast` | Statistical estimate with interval, model version, training date, disclaimer | `/api/forecast?from=USD&to=EUR&horizon=7` |
 | `GET /api/currencies` | Supported codes with display precision (JPY = 0 decimals, etc.) | `/api/currencies` |
 | `GET /api/health` | Liveness and data-source state | `/api/health` |
+| `GET /api/timeseries` | Daily rates across a date range | `/api/timeseries?start=2024-01-01&end=2024-01-31&base=USD` |
+| `GET /api/fluctuation` | Change and percentage change across a date range | `/api/fluctuation?start=2024-01-01&end=2024-01-31&base=USD` |
+| `GET /api/batch-convert` | Convert one amount to multiple currencies | `/api/batch-convert?from=USD&to=EUR,GBP,JPY&amount=100` |
+| `GET /api/metadata` | Currency names, regions, flags, and symbols | `/api/metadata` |
+| `GET /api/coverage` | Dataset date range, sources, and refresh schedule | `/api/coverage` |
 
 All query strings are validated with zod; errors return structured `{ error, message, details }` bodies. Full parameter reference and semantics: the [/docs](http://localhost:5173/docs) page served by the app itself.
 

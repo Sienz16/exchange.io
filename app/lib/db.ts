@@ -4,6 +4,7 @@ import type { RateSnapshot } from './types'
 
 export type RateRow = { date: string; base: string; currency: string; rate: number; source: string; fetched_at: string }
 export type PairRateRow = { date: string; rate: number }
+export type TimeSeriesRow = { date: string; rates: Record<string, number>; source: string; fetched_at: string }
 export type RateDatabase = {
   getLatest(base: string): Promise<RateSnapshot | null>
   getHistorical(date: string, base: string): Promise<RateSnapshot | null>
@@ -104,6 +105,37 @@ export function createRateDatabase(sql: Sql): RateDatabase {
       await sql`INSERT INTO rate_updates (fetched_at, source, status, error_text) VALUES (${update.fetched_at}, ${update.source}, ${update.status}, ${update.error_text})`
     },
   }
+}
+
+export async function getTimeSeries(start: string, end: string, base: string, symbols?: string[]): Promise<TimeSeriesRow[]> {
+  const instance = getSql()
+  if (!instance) return []
+  const requested = symbols?.length ? [...new Set([base, ...symbols])] : null
+  const rows = await instance`SELECT date::text, currency, rate::float8, source, to_char(fetched_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS fetched_at FROM daily_rates WHERE base = 'EUR' AND date BETWEEN ${start} AND ${end} AND (${requested ? instance`currency IN ${instance(requested)}` : instance`TRUE`}) ORDER BY date ASC, currency ASC`
+  const grouped = new Map<string, TimeSeriesRow>()
+  for (const row of rows as unknown as Array<{ date: string; currency: string; rate: number; source: string; fetched_at: string }>) {
+    const point = grouped.get(row.date) ?? { date: row.date, rates: {}, source: row.source, fetched_at: row.fetched_at }
+    point.rates[row.currency] = row.rate
+    grouped.set(row.date, point)
+  }
+  if (base === 'EUR') for (const point of grouped.values()) point.rates.EUR = 1
+  if (base !== 'EUR') {
+    for (const point of grouped.values()) {
+      const baseRate = point.rates[base]
+      if (!baseRate) continue
+      const rates = { [base]: 1, ...Object.fromEntries(Object.entries(point.rates).filter(([currency]) => !symbols?.length || symbols.includes(currency)).map(([currency, rate]) => [currency, rate / baseRate])) }
+      point.rates = rates
+    }
+  }
+  return [...grouped.values()]
+}
+
+export async function getCoverage(): Promise<{ earliest_date: string | null; latest_date: string | null; sources: string[]; refresh: string }> {
+  const instance = getSql()
+  if (!instance) return { earliest_date: null, latest_date: null, sources: [], refresh: 'daily at 00:30 UTC' }
+  const rows = await instance`SELECT min(date)::text AS earliest_date, max(date)::text AS latest_date, array_agg(DISTINCT source ORDER BY source) AS sources FROM daily_rates`
+  const row = rows[0] as unknown as { earliest_date: string | null; latest_date: string | null; sources: string[] }
+  return { earliest_date: row?.earliest_date ?? null, latest_date: row?.latest_date ?? null, sources: row?.sources ?? [], refresh: 'daily at 00:30 UTC' }
 }
 
 let sql: Sql | null | undefined

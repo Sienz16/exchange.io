@@ -33,7 +33,34 @@ export const convertQuerySchema = z.object({
 export const historicalQuerySchema = z.object({
   date: isoDateSchema,
   base: z.preprocess((value) => typeof value === 'string' ? value.trim().toUpperCase() : value, currencySchema).default('USD'),
+  symbols: z.string().optional(),
 })
+
+export const latestQueryWithSymbolsSchema = latestQuerySchema.extend({ symbols: z.string().optional() })
+export const timeseriesQuerySchema = z.object({
+  start: isoDateSchema,
+  end: isoDateSchema,
+  base: z.preprocess((value) => typeof value === 'string' ? value.trim().toUpperCase() : value, currencySchema).default('USD'),
+  symbols: z.string().optional(),
+})
+export const fluctuationQuerySchema = z.object({
+  start: isoDateSchema,
+  end: isoDateSchema,
+  base: z.preprocess((value) => typeof value === 'string' ? value.trim().toUpperCase() : value, currencySchema).default('USD'),
+})
+export const batchConvertQuerySchema = z.object({
+  from: currencySchema,
+  to: z.string().min(3),
+  amount: positiveAmountSchema,
+  date: isoDateSchema.optional(),
+})
+
+export function parseSymbols(value: string | undefined): string[] | undefined {
+  if (!value) return undefined
+  const symbols = [...new Set(value.split(',').map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))]
+  if (!symbols.length || symbols.some((symbol) => !currencySchema.safeParse(symbol).success)) throw { error: 'invalid_query', message: 'Query parameters are invalid', details: [{ path: ['symbols'], message: 'symbols must be comma-separated 3-letter currency codes' }] }
+  return symbols
+}
 
 export const forecastQuerySchema = z.object({
   from: currencySchema,
