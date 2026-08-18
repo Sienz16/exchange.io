@@ -113,11 +113,13 @@ export function createRateService(source: Source = withFallback(fetchLatestRates
       const toRate = snapshot.rates[to]
       if (fromRate === undefined || toRate === undefined) throw new Error(`Unsupported currency: ${to}`)
       const rate = toRate / fromRate
+      const result = input.amount * rate
+      if (!Number.isFinite(rate) || !Number.isFinite(result)) throw new Error('Conversion result is not finite')
       return {
         from,
         to,
         amount: input.amount,
-        result: input.amount * rate,
+        result,
         rate,
         rate_date: snapshot.rate_date,
         source: snapshot.source,

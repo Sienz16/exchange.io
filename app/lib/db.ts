@@ -121,3 +121,44 @@ export function getDatabase(): RateDatabase | null {
   database = instance ? createRateDatabase(instance) : null
   return database
 }
+
+let databaseHealth: { checkedAt: number; healthy: boolean } | null = null
+let freshness: { checkedAt: number; fetchedAt: string | null } | null = null
+export async function checkDatabase(): Promise<boolean> {
+  const now = Date.now()
+  if (databaseHealth && now - databaseHealth.checkedAt < 10_000) return databaseHealth.healthy
+  const instance = getSql()
+  if (!instance) return true
+  try {
+    await Promise.race([
+      instance`SELECT 1`,
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('database health probe timed out')), 3_000)),
+    ])
+    databaseHealth = { checkedAt: now, healthy: true }
+    return true
+  } catch (error) {
+    console.error('database health probe failed:', error)
+    databaseHealth = { checkedAt: now, healthy: false }
+    return false
+  }
+}
+
+export async function getLatestFetchedAt(): Promise<string | null> {
+  const now = Date.now()
+  if (freshness && now - freshness.checkedAt < 10_000) return freshness.fetchedAt
+  const instance = getSql()
+  if (!instance) return null
+  try {
+    const rows = await Promise.race([
+      instance`SELECT max(fetched_at) AS fetched_at FROM daily_rates`,
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('database freshness probe timed out')), 3_000)),
+    ])
+    const fetchedAt = (rows[0] as { fetched_at?: string | null } | undefined)?.fetched_at ?? null
+    freshness = { checkedAt: now, fetchedAt }
+    return fetchedAt
+  } catch (error) {
+    console.error('database freshness probe failed:', error)
+    freshness = { checkedAt: now, fetchedAt: null }
+    return null
+  }
+}

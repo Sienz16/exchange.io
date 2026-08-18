@@ -55,9 +55,10 @@ export function handleApiError(c: Context, error: unknown) {
 }
 
 export function unknownError(c: Context, error: unknown) {
+  console.error('API request failed:', error)
   return apiError(c, {
     error: 'service_unavailable',
-    message: error instanceof Error ? error.message : 'Rate service is unavailable',
+    message: 'Rate service is unavailable',
     details: null,
   }, 503)
 }

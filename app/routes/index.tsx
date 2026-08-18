@@ -162,7 +162,7 @@ export default createRoute((c) => {
   "from": "USD", "to": "EUR", "amount": 100,
   "result": 92.16, "rate": 0.9216,
   "rate_date": "2026-08-16",
-  "source": "",
+  "source": "ecb.europa.eu",
   "fetched_at": "2026-08-16T00:04:12.000Z"
 }`}</code></pre>
           </div>
@@ -178,7 +178,7 @@ export default createRoute((c) => {
           </div>
           <div data-reveal data-reveal-delay="0.1" className="border-t border-line2">
             {[
-              ['01', 'OPEN SOURCE INPUT', 'Daily reference rates from .'],
+              ['01', 'OPEN SOURCE INPUT', 'Daily reference rates from the European Central Bank.'],
               ['02', 'ECB HISTORY', 'Long-range archive reaching back to 1999.'],
               ['03', 'HONEST FRESHNESS', 'Snapshot metadata travels with every response.'],
             ].map(([num, title, text]) => (

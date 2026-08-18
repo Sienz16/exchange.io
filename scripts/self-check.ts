@@ -31,6 +31,7 @@ assert.equal(isFutureDate('2099-01-01', new Date('2026-08-16T12:00:00Z')), true)
 assert.equal(isFutureDate('2026-08-16', new Date('2026-08-16T12:00:00Z')), false)
 
 assert.throws(() => parseQuery(convertQuerySchema, { from: 'USD', to: 'EUR', amount: 0 }))
+assert.throws(() => parseQuery(convertQuerySchema, { from: 'USD', to: 'EUR', amount: 1e12 + 1 }))
 assert.throws(() => parseQuery(convertQuerySchema, { from: 'USD', to: 'EUR', amount: true }))
 assert.throws(() => parseQuery(forecastQuerySchema, { from: 'USD', to: 'EUR', horizon: 31 }))
 assert.throws(() => parseQuery(forecastQuerySchema, { from: 'USD', to: 'EUR', horizon: true }))

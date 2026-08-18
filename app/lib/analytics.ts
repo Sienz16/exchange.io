@@ -21,8 +21,8 @@ export function clientIp(headers: Headers): string {
   const cf = headers.get('cf-connecting-ip')
   if (cf) return cf
   const forwarded = headers.get('x-forwarded-for')
-  const first = forwarded?.split(',')[0].trim()
-  return first || 'unknown'
+  const hops = forwarded?.split(',').map((value) => value.trim()).filter(Boolean)
+  return hops?.at(-1) || 'unknown'
 }
 
 export async function hashIp(ip: string, salt: string): Promise<string> {
@@ -31,8 +31,9 @@ export async function hashIp(ip: string, salt: string): Promise<string> {
 }
 
 /** Salt rotates daily so hashes cannot be joined across days. */
-export function dailySalt(date = new Date()): string {
-  const base = readEnv('ANALYTICS_SALT') ?? readEnv('ADMIN_TOKEN') ?? 'exchange-io'
+export function dailySalt(date = new Date()): string | null {
+  const base = readEnv('ANALYTICS_SALT') || readEnv('ADMIN_TOKEN')
+  if (!base) return null
   return `${base}:${date.toISOString().slice(0, 10)}`
 }
 
@@ -101,6 +102,7 @@ export function createRequestRecorder(writer: AnalyticsWriter | null, options: {
 }
 
 export function getAnalyticsWriter(): AnalyticsWriter | null {
+  if (!readEnv('ANALYTICS_SALT') && !readEnv('ADMIN_TOKEN')) return null
   const sql = getSql()
   if (!sql) return null
   return {
@@ -120,7 +122,7 @@ export async function buildEntry(input: { path: string; query: Record<string, st
     route: input.path,
     status: input.status,
     duration_ms: Math.max(0, Math.round(input.durationMs)),
-    ip_hash: await hashIp(clientIp(input.headers), dailySalt(now)),
+    ip_hash: await hashIp(clientIp(input.headers), dailySalt(now) ?? 'telemetry-disabled'),
     referer_domain: refererDomain(input.headers.get('referer')),
     ua_class: classifyUserAgent(input.headers.get('user-agent')),
     pair: pairForRoute(input.path, input.query),

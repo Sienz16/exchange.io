@@ -7,6 +7,7 @@ const recorder = createRequestRecorder(getAnalyticsWriter(), {
   onError: (error) => console.error('analytics flush failed:', error),
 })
 const limiter = createRateLimiter({ limit: 120, windowMs: 60_000 })
+const API_RATE_LIMIT = 120
 
 /** Records every completed API request; never breaks the response it measures. */
 const apiTelemetry: MiddlewareHandler = async (c, next) => {
@@ -29,7 +30,7 @@ const apiTelemetry: MiddlewareHandler = async (c, next) => {
 const apiRateLimit: MiddlewareHandler = async (c, next) => {
   if (c.req.path === '/api/health' || c.req.method === 'OPTIONS') return next()
   const result = limiter.check(clientIp(c.req.raw.headers))
-  c.header('X-RateLimit-Limit', '120')
+  c.header('X-RateLimit-Limit', String(API_RATE_LIMIT))
   c.header('X-RateLimit-Remaining', String(result.remaining))
   if (!result.allowed) {
     c.header('Retry-After', String(result.retryAfter))

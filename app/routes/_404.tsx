@@ -2,6 +2,7 @@ import type { NotFoundHandler } from 'hono'
 
 const handler: NotFoundHandler = (c) => {
   c.status(404)
+  if (c.req.path.startsWith('/api/')) return c.json({ error: 'not_found' })
   return c.render(
     <main className="flex min-h-screen flex-col items-center justify-center gap-1.5 p-10 text-center">
       <a className="mb-7 font-display text-[1.12rem] font-bold tracking-[-.05em]" href="/">exchange<span className="text-accent-strong">.io</span></a>

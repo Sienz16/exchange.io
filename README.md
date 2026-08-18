@@ -44,7 +44,7 @@ curl "http://localhost:5173/api/convert?from=USD&to=EUR&amount=100"
   "from": "USD", "to": "EUR", "amount": 100,
   "result": 92.16, "rate": 0.9216,
   "rate_date": "2026-08-16",
-  "source": "",
+   "source": "ecb.europa.eu",
   "fetched_at": "2026-08-16T00:04:12.000Z"
 }
 ```
@@ -68,7 +68,7 @@ All query strings are validated with zod; errors return structured `{ error, mes
 
 ## Features
 
-- [x] 30 currencies, daily reference rates from 
+- [x] 30 currencies, daily reference rates from the European Central Bank
 - [x] Historical ECB archive seeded back to 1999
 - [x] Provenance metadata (source · rate date · fetch time) on every response
 - [x] Cross-rate math server-side; zero-decimal currencies respected
@@ -106,7 +106,7 @@ All query strings are validated with zod; errors return structured `{ error, mes
 | Framework | [HonoX](https://github.com/honojs/honox) (Hono) | file-based routes, middleware, one fetch handler for every runtime |
 | UI | React 19 islands | SSR via `@hono/react-renderer`; hydration only where needed |
 | Styling | Tailwind CSS v4 | custom theme system, light + dark |
-| Data | PostgreSQL (`postgres.js`) | single-connection pool; `` + ECB archive upstreams |
+ | Data | PostgreSQL (`postgres.js`) | single-connection pool; ECB archive upstream |
 | Validation | zod v4 | every query string, structured error bodies |
 | Scheduling | `Bun.cron` / Workers cron triggers | daily ingest + hourly telemetry rollup |
 

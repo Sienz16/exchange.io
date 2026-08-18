@@ -10,7 +10,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgres://exchange_io:${POSTGRES_PASSWORD}@db:5432/exchange_io}
       ADMIN_TOKEN: ${ADMIN_TOKEN}
       DAILY_RATE_BASE: ${DAILY_RATE_BASE:-EUR}
-      ANALYTICS_SALT: ${ANALYTICS_SALT:-}
+      ANALYTICS_SALT: ${ANALYTICS_SALT-}
     depends_on:
       db:
         condition: service_healthy

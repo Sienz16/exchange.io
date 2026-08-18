@@ -4,7 +4,13 @@ export const ADMIN_COOKIE = 'admin_session'
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000
 
 export function adminToken(): string | null {
-  return readEnv('ADMIN_TOKEN') ?? null
+  const token = readEnv('ADMIN_TOKEN')
+  if (!token) return null
+  if (token.length < 32) {
+    console.error('ADMIN_TOKEN must be at least 32 characters; admin dashboard disabled')
+    return null
+  }
+  return token
 }
 
 export function constantTimeEqual(a: string, b: string): boolean {

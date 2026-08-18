@@ -17,7 +17,7 @@ const endpoints = [
   "base": "USD",
   "rates": { "EUR": 0.92, "JPY": 150.12 },
   "rate_date": "2026-08-16",
-  "source": "",
+  "source": "ecb.europa.eu",
   "fetched_at": "2026-08-16T00:04:12.000Z"
 }`,
   },
@@ -31,7 +31,7 @@ const endpoints = [
   "from": "USD", "to": "EUR", "amount": 100,
   "result": 92, "rate": 0.92,
   "rate_date": "2026-08-16",
-  "source": "",
+  "source": "ecb.europa.eu",
   "fetched_at": "2026-08-16T00:04:12.000Z"
 }`,
   },
@@ -45,7 +45,7 @@ const endpoints = [
   "base": "USD",
   "rates": { "EUR": 0.91, "JPY": 145.48 },
   "rate_date": "2024-01-15",
-  "source": "ecb",
+  "source": "ecb.europa.eu",
   "fetched_at": "2024-01-16T00:04:12.000Z"
 }`,
   },
@@ -124,15 +124,15 @@ export default createRoute((c) => {
             {
               id: 'semantics', kicker: '02 / TIME', heading: <>Date<br /><em className={em}>semantics.</em></>,
               body: <>
-                <p className="max-w-[660px] leading-[1.8] text-muted">Dates use `YYYY-MM-DD` and mean a UTC calendar day. A request for `2024-01-15` asks for the snapshot labelled January 15, not a rolling 24-hour window.</p>
-                <p className="max-w-[660px] leading-[1.8] text-muted">Omit `date` from convert for latest data. Future dates are rejected with `future_date`. Historical availability depends on stored snapshots; missing records return `historical_unavailable` rather than silently substituting today&apos;s rate.</p>
+                 <p className="max-w-[660px] leading-[1.8] text-muted">Dates use <code>YYYY-MM-DD</code> and mean a UTC calendar day. A request for <code>2024-01-15</code> asks for the snapshot labelled January 15, not a rolling 24-hour window.</p>
+                 <p className="max-w-[660px] leading-[1.8] text-muted">Omit <code>date</code> from convert for latest data. Future dates are rejected with <code>future_date</code>. Historical availability depends on stored snapshots; missing records return <code>historical_unavailable</code> rather than silently substituting today&apos;s rate.</p>
               </>,
             },
             {
               id: 'freshness', kicker: '03 / PROVENANCE', heading: <>Freshness<br /><em className={em}>is visible.</em></>,
               body: <>
-                <p className="max-w-[660px] leading-[1.8] text-muted">`rate_date` is the date represented by the rate. `fetched_at` is the UTC timestamp when exchange.io obtained or stored the snapshot. `source` names the upstream dataset.</p>
-                <p className="max-w-[660px] leading-[1.8] text-muted">Latest data is refreshed on a daily schedule and may be temporarily served from the last known snapshot during upstream trouble. Inspect service state through `/api/health` and treat `fetched_at` as the freshness boundary.</p>
+                 <p className="max-w-[660px] leading-[1.8] text-muted"><code>rate_date</code> is the date represented by the rate. <code>fetched_at</code> is the UTC timestamp when exchange.io obtained or stored the snapshot. <code>source</code> names the upstream dataset.</p>
+                 <p className="max-w-[660px] leading-[1.8] text-muted">Latest data is refreshed on a daily schedule and may be temporarily served from the last known snapshot during upstream trouble. Inspect service state through <code>/api/health</code> and treat <code>fetched_at</code> as the freshness boundary.</p>
               </>,
             },
           ].map((section) => (
@@ -156,7 +156,7 @@ export default createRoute((c) => {
               <h2 className={sectionHeading}>Errors<br /><em className={em}>stay legible.</em></h2>
             </div>
             <div>
-              <p className="max-w-[660px] leading-[1.8] text-muted">Errors use JSON with `error`, `message`, and `details`. Common codes:</p>
+               <p className="max-w-[660px] leading-[1.8] text-muted">Errors use JSON with <code>error</code>, <code>message</code>, and <code>details</code>. Common codes:</p>
               <ul className="my-4.5 list-disc pl-4.5 leading-[2.15] text-muted">
                 {[
                   ['invalid_query', 'missing, malformed, or non-positive input.'],

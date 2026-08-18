@@ -8,7 +8,7 @@ const URL = 'https://api.frankfurter.app/latest?from=EUR'
 export async function fetchFrankfurterRates(base: string, fetchImpl: typeof fetch = fetch): Promise<RateSnapshot> {
   const target = base.trim().toUpperCase()
   if (!ecbCurrencies.has(target)) throw new Error(`Unsupported currency: ${target}`)
-  const response = await fetchImpl(URL)
+  const response = await fetchImpl(URL, { signal: AbortSignal.timeout(10_000) })
   if (!response.ok) throw new Error(`Rate source returned HTTP ${response.status}`)
   const body = await response.json() as { date?: string; rates?: Record<string, number> }
   if (!body.date || !body.rates || !Object.keys(body.rates).length) throw new Error('Frankfurter response contains no rates')

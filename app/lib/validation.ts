@@ -16,7 +16,7 @@ const preprocessNumber = <T extends z.ZodType>(schema: T) => z.preprocess(
   schema,
 )
 
-export const positiveAmountSchema = preprocessNumber(z.number().finite().positive())
+export const positiveAmountSchema = preprocessNumber(z.number().finite().positive().max(1e12))
 export const forecastHorizonSchema = preprocessNumber(z.number().finite().int().min(1).max(30))
 
 export const latestQuerySchema = z.object({

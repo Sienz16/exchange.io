@@ -30,7 +30,7 @@ assert.equal(pairForRoute('/api/convert', { from: 'USD' }), null)
 assert.equal(pairForRoute('/api/latest', { base: 'USD' }), null)
 
 assert.equal(clientIp(new Headers({ 'cf-connecting-ip': '203.0.113.9', 'x-forwarded-for': '198.51.100.7, 10.0.0.1' })), '203.0.113.9')
-assert.equal(clientIp(new Headers({ 'x-forwarded-for': '198.51.100.7, 10.0.0.1' })), '198.51.100.7')
+assert.equal(clientIp(new Headers({ 'x-forwarded-for': '198.51.100.7, 10.0.0.1' })), '10.0.0.1')
 assert.equal(clientIp(new Headers()), 'unknown')
 
 const hashA = await hashIp('203.0.113.9', 'salt-one')
@@ -38,8 +38,12 @@ assert.match(hashA, /^[0-9a-f]{16}$/)
 assert.equal(hashA, await hashIp('203.0.113.9', 'salt-one'))
 assert.notEqual(hashA, await hashIp('203.0.113.9', 'salt-two'))
 
-assert.equal(dailySalt(new Date('2026-08-17T10:00:00Z')), dailySalt(new Date('2026-08-17T23:00:00Z')))
-assert.notEqual(dailySalt(new Date('2026-08-17T10:00:00Z')), dailySalt(new Date('2026-08-18T00:00:00Z')))
+const saltA = dailySalt(new Date('2026-08-17T10:00:00Z'))
+const saltB = dailySalt(new Date('2026-08-17T23:00:00Z'))
+const saltC = dailySalt(new Date('2026-08-18T00:00:00Z'))
+assert.equal(saltA, saltB)
+if (saltA === null) assert.equal(saltC, null)
+else assert.notEqual(saltA, saltC)
 
 const entry = (route: string): ApiRequestEntry => ({
   ts: new Date().toISOString(),
