@@ -2,6 +2,7 @@ import { readEnv } from './env'
 
 export const ADMIN_COOKIE = 'admin_session'
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000
+const revokedSessions = new Set<string>()
 
 export function adminToken(): string | null {
   const token = readEnv('ADMIN_TOKEN')
@@ -35,7 +36,15 @@ function cookieAttributes(maxAgeSeconds: number): string {
 export async function createSessionCookie(token: string, now = Date.now()): Promise<string> {
   const expiry = now + SESSION_TTL_MS
   const signature = await hmac(String(expiry), token)
-  return `${ADMIN_COOKIE}=${expiry}.${signature}${cookieAttributes(SESSION_TTL_MS / 1000)}`
+  const value = `${expiry}.${signature}`
+  revokedSessions.delete(value)
+  return `${ADMIN_COOKIE}=${value}${cookieAttributes(SESSION_TTL_MS / 1000)}`
+}
+
+export function revokeSessionCookie(cookieHeader: string | null | undefined): void {
+  const value = (cookieHeader ?? '').split(';').map((part) => part.trim()).find((part) => part.startsWith(`${ADMIN_COOKIE}=`))?.slice(ADMIN_COOKIE.length + 1)
+  if (value) revokedSessions.add(value)
+  if (revokedSessions.size > 10_000) revokedSessions.delete(revokedSessions.values().next().value as string)
 }
 
 export async function verifySessionCookie(cookieHeader: string | null | undefined, token: string, now = Date.now()): Promise<boolean> {
@@ -46,6 +55,7 @@ export async function verifySessionCookie(cookieHeader: string | null | undefine
   if (dot === -1) return false
   const expiry = value.slice(0, dot)
   const signature = value.slice(dot + 1)
+  if (revokedSessions.has(value)) return false
   if (!/^\d+$/.test(expiry) || Number(expiry) < now) return false
   return constantTimeEqual(await hmac(expiry, token), signature)
 }

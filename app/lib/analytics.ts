@@ -76,7 +76,10 @@ export function createRequestRecorder(writer: AnalyticsWriter | null, options: {
     const rows = buffer
     buffer = []
     try {
-      await writer!.insertApiRequests(rows)
+      await Promise.race([
+        writer!.insertApiRequests(rows),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('analytics flush timed out')), 3_000)),
+      ])
     } catch (error) {
       options.onError?.(error)
     } finally {

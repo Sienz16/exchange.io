@@ -8,10 +8,13 @@ export function createRateLimiter(options: { limit: number; windowMs: number; ma
   return {
     check(key: string) {
       const now = clock()
+      for (const [bucketKey, bucket] of buckets) {
+        if (now - bucket.startedAt >= options.windowMs) buckets.delete(bucketKey)
+      }
       const current = buckets.get(key)
       if (!current || now - current.startedAt >= options.windowMs) {
         if (!current && buckets.size >= maxKeys) {
-          const oldest = buckets.keys().next().value
+          const oldest = buckets.entries().next().value?.[0]
           if (oldest) buckets.delete(oldest)
         }
         buckets.set(key, { startedAt: now, count: 1 })

@@ -4,6 +4,19 @@ import { runRollup } from './lib/analytics'
 import { runDailyRateFetch } from './lib/jobs/fetch-rates'
 
 const app = createApp()
+const securityHeaders: Record<string, string> = {
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; frame-ancestors 'none'",
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+}
+
+async function fetch(request: Request, env?: {}, ctx?: ExecutionContext): Promise<Response> {
+  const response = await app.fetch(request, env, ctx)
+  for (const [key, value] of Object.entries(securityHeaders)) response.headers.set(key, value)
+  if (request.url.includes('/admin')) response.headers.set('X-Robots-Tag', 'noindex, nofollow')
+  return response
+}
 
 if (process.env.NODE_ENV === 'development') showRoutes(app)
 
@@ -33,4 +46,4 @@ if (typeof runtime.Bun?.cron === 'function' && process.env.NODE_ENV !== 'develop
 // the Cloudflare build entry only imports this module's default export and
 // merges its members (e.g. `scheduled`) into the deployed worker, so a named
 // export would be dropped. Bun serves any default export exposing `fetch`.
-export default { fetch: app.fetch, scheduled }
+export default { fetch, scheduled }
