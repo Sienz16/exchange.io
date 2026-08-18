@@ -12,7 +12,7 @@ export default createRoute(async (c) => {
     ? latestFetchedAt == null || Date.now() - new Date(latestFetchedAt).getTime() > 26 * 60 * 60 * 1000
     : service.checked_at != null && Date.now() - new Date(service.checked_at).getTime() > 26 * 60 * 60 * 1000
   const status = service.status === 'unavailable' || !databaseHealthy ? 'unavailable' : service.status === 'degraded' || stale ? 'degraded' : 'ok'
-  const response = json(c, {
+  const response = await json(c, {
     status,
     time: new Date().toISOString(),
     data_source: {

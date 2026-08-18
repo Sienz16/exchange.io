@@ -18,16 +18,12 @@ export async function cors(c: Context, next: () => Promise<void>) {
   }
 }
 
-export function json<T>(c: Context, body: T, status: ContentfulStatusCode = 200) {
+export async function json<T>(c: Context, body: T, status: ContentfulStatusCode = 200) {
   const payload = JSON.stringify(body)
   const headers: Record<string, string> = { ...corsHeaders, 'Cache-Control': status >= 400 ? 'no-store' : 'public, max-age=300, stale-while-revalidate=600' }
   if (status < 400) {
-    let hash = 2166136261
-    for (let index = 0; index < payload.length; index += 1) {
-      hash ^= payload.charCodeAt(index)
-      hash = Math.imul(hash, 16777619)
-    }
-    const etag = `W/\"${(hash >>> 0).toString(16)}\"`
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(payload))
+    const etag = `W/\"${Array.from(new Uint8Array(digest)).slice(0, 8).map((byte) => byte.toString(16).padStart(2, '0')).join('')}\"`
     headers.ETag = etag
     if (c.req.header('If-None-Match') === etag) return new Response(null, { status: 304, headers })
   }

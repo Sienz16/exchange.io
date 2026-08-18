@@ -71,7 +71,7 @@ export function createRateService(source: Source = withFallback(fetchLatestRates
         status = 'unavailable'
         throw error
       }
-      if (database) await database.upsertRates(Object.entries(snapshot.rates).map(([currency, rate]) => ({
+      if (database && snapshot.base === 'EUR') await database.upsertRates(Object.entries(snapshot.rates).map(([currency, rate]) => ({
         date: snapshot.rate_date, base: snapshot.base, currency, rate, source: snapshot.source, fetched_at: snapshot.fetched_at,
       })))
       cache.set(key, snapshot)
@@ -111,7 +111,8 @@ export function createRateService(source: Source = withFallback(fetchLatestRates
       const snapshot = input.date ? await getHistorical(input.date, from) : await getLatest(from)
       const fromRate = snapshot.rates[from] ?? (from === snapshot.base ? 1 : undefined)
       const toRate = snapshot.rates[to]
-      if (fromRate === undefined || toRate === undefined) throw new Error(`Unsupported currency: ${to}`)
+      if (fromRate === undefined) throw { error: 'unsupported_currency', message: 'Source currency is not supported', details: { currency: from } }
+      if (toRate === undefined) throw { error: 'unsupported_currency', message: 'Target currency is not supported', details: { currency: to } }
       const rate = toRate / fromRate
       const result = input.amount * rate
       if (!Number.isFinite(rate) || !Number.isFinite(result)) throw new Error('Conversion result is not finite')

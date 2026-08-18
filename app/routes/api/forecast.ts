@@ -14,7 +14,7 @@ export default createRoute(async (c) => {
         details: { from: query.from, to: query.to },
       })
     }
-    return json(c, await forecastPair(query))
+    return await json(c, await forecastPair(query))
   } catch (error) {
     return handleApiError(c, error)
   }

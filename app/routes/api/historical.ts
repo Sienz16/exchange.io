@@ -20,7 +20,7 @@ export default createRoute(async (c) => {
         details: { currency: query.base },
       })
     }
-    return json(c, await getHistorical(query.date, query.base))
+    return await json(c, await getHistorical(query.date, query.base))
   } catch (error) {
     return handleApiError(c, error)
   }

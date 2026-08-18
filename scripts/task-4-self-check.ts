@@ -31,7 +31,7 @@ const service = createRateService(
 assert.equal((await service.getHistorical('2024-01-08', 'USD')).rate_date, '2024-01-05')
 const dated = await service.convert({ from: 'USD', to: 'EUR', amount: 2, date: '2024-01-08' })
 assert.equal(dated.result, 1.82)
-await assert.rejects(() => service.getLatest('USD'), /db write failed/)
+assert.equal((await service.getLatest('USD')).base, 'USD') // derived snapshots are not persisted
 
 const exactCache = createRateService(
   async () => ({ base: 'USD', rates: { USD: 1, EUR: 0.9 }, rate_date: '2024-01-08', source: 'source', fetched_at: '2024-01-08T00:00:00Z' }),

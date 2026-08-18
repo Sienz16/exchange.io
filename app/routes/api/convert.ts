@@ -22,7 +22,7 @@ export default createRoute(async (c) => {
         details: { date: query.date },
       }, 422)
     }
-    return json(c, await convert({ from: query.from, to: query.to, amount: query.amount, date: query.date }))
+    return await json(c, await convert({ from: query.from, to: query.to, amount: query.amount, date: query.date }))
   } catch (error) {
     return handleApiError(c, error)
   }

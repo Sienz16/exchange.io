@@ -13,7 +13,7 @@ export default createRoute(async (c) => {
         details: { currency: query.base },
       })
     }
-    return json(c, await getLatest(query.base))
+    return await json(c, await getLatest(query.base))
   } catch (error) {
     return handleApiError(c, error)
   }

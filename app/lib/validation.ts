@@ -20,7 +20,7 @@ export const positiveAmountSchema = preprocessNumber(z.number().finite().positiv
 export const forecastHorizonSchema = preprocessNumber(z.number().finite().int().min(1).max(30))
 
 export const latestQuerySchema = z.object({
-  base: currencySchema.default('USD'),
+  base: z.preprocess((value) => typeof value === 'string' ? value.trim().toUpperCase() : value, currencySchema).default('USD'),
 })
 
 export const convertQuerySchema = z.object({
@@ -32,7 +32,7 @@ export const convertQuerySchema = z.object({
 
 export const historicalQuerySchema = z.object({
   date: isoDateSchema,
-  base: currencySchema.default('USD'),
+  base: z.preprocess((value) => typeof value === 'string' ? value.trim().toUpperCase() : value, currencySchema).default('USD'),
 })
 
 export const forecastQuerySchema = z.object({

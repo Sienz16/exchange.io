@@ -114,7 +114,7 @@ assert.match(clearSessionCookie(), /^admin_session=; Path=\/; Max-Age=0; HttpOnl
 import { createRateService } from '../app/lib/rates'
 import type { RateSnapshot } from '../app/lib/types'
 
-const counterSnapshot: RateSnapshot = { base: 'USD', rates: { USD: 1, EUR: 0.8 }, rate_date: '2026-08-16', source: 'self-check', fetched_at: '2026-08-16T00:00:00.000Z' }
+const counterSnapshot: RateSnapshot = { base: 'EUR', rates: { EUR: 1, USD: 1.25 }, rate_date: '2026-08-16', source: 'self-check', fetched_at: '2026-08-16T00:00:00.000Z' }
 class CounterDatabase {
   stored: RateSnapshot | null = null
   async getLatest() { return this.stored }
@@ -136,21 +136,21 @@ let counterClock = new Date('2026-08-16T00:00:00Z')
 const counterDb = new CounterDatabase()
 const counted = createRateService(async () => ({ ...counterSnapshot, fetched_at: counterClock.toISOString() }), () => counterClock, counterDb)
 
-await counted.getLatest('USD')
+await counted.getLatest('EUR')
 assert.equal(counted.getCacheStats().live_fetch, 1)
 counterClock = new Date('2026-08-16T00:05:00Z')
-await counted.getLatest('USD')
+await counted.getLatest('EUR')
 assert.equal(counted.getCacheStats().cache_hit, 1)
 counterClock = new Date('2026-08-16T01:05:00Z')
-await counted.getLatest('USD') // everything stale: live refetch
+await counted.getLatest('EUR') // everything stale: live refetch
 assert.equal(counted.getCacheStats().live_fetch, 2)
 
 const dbOnly = createRateService(async () => { throw new Error('source down') }, () => new Date('2026-08-16T01:10:00Z'), counterDb)
-assert.equal((await dbOnly.getLatest('USD')).rates.EUR, 0.8) // stored row (01:05) is fresh
+assert.equal((await dbOnly.getLatest('EUR')).rates.USD, 1.25) // stored row (01:05) is fresh
 assert.equal(dbOnly.getCacheStats().db_read, 1)
 
 const staleServed = createRateService(async () => { throw new Error('source down') }, () => new Date('2026-08-16T04:00:00Z'), counterDb)
-assert.equal((await staleServed.getLatest('USD')).rates.EUR, 0.8) // stale-but-usable wins over a dead source
+assert.equal((await staleServed.getLatest('EUR')).rates.USD, 1.25) // stale-but-usable wins over a dead source
 assert.equal(staleServed.getCacheStats().stale_fallback, 1)
 
 import { getDashboardStats, getPipelineStats, rollupAndPrune, runRollup } from '../app/lib/analytics'

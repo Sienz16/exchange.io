@@ -4,6 +4,9 @@ import type { ForecastResult } from './types'
 const WINDOW = 7
 const MODEL_VERSION = 'trend-blend-v2'
 const DISCLAIMER = 'Estimate only; not financial advice or a trading signal.'
+const HISTORY_LIMIT = 5000
+const CACHE_TTL_MS = 5 * 60 * 1000
+const historyCache = new Map<string, { expiresAt: number; value: PairRateRow[] }>()
 
 export type ForecastInput = { from: string; to: string; horizon: number }
 
@@ -44,7 +47,12 @@ export function forecastFromHistory(input: ForecastInput, history: PairRateRow[]
 
 export async function forecastPair(input: ForecastInput): Promise<ForecastResult> {
   const database = getDatabase()
-  const history = database?.getPairHistory ? await database.getPairHistory(input.from, input.to) : []
+  const key = `${input.from}:${input.to}`
+  const cached = historyCache.get(key)
+  const history = cached && cached.expiresAt > Date.now()
+    ? cached.value
+    : database?.getPairHistory ? await database.getPairHistory(input.from, input.to) : []
+  if (!cached || cached.expiresAt <= Date.now()) historyCache.set(key, { expiresAt: Date.now() + CACHE_TTL_MS, value: history.slice(-HISTORY_LIMIT) })
   const forecast = forecastFromHistory(input, history)
   if (!forecast) throw {
     error: 'forecast_unavailable',

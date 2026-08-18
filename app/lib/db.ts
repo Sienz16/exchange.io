@@ -42,8 +42,8 @@ export function deriveFromEur(eur: RateSnapshot, base: string): RateSnapshot | n
 export function createRateDatabase(sql: Sql): RateDatabase {
   async function findBaseRows(base: string, date?: string): Promise<RateSnapshot | null> {
     const rows = date
-      ? await sql`SELECT date::text, base, currency, rate::float8, source, to_char(fetched_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS fetched_at FROM daily_rates WHERE base = ${base} AND date = (SELECT max(date) FROM daily_rates WHERE base = ${base} AND date <= ${date})`
-      : await sql`SELECT date::text, base, currency, rate::float8, source, to_char(fetched_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS fetched_at FROM daily_rates WHERE base = ${base} AND date = (SELECT max(date) FROM daily_rates WHERE base = ${base})`
+      ? await sql`SELECT date::text, base, currency, rate::float8, source, to_char(fetched_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS fetched_at FROM daily_rates WHERE base = ${base} AND date = (SELECT max(date) FROM daily_rates WHERE base = ${base} AND date <= ${date}) ORDER BY currency`
+      : await sql`SELECT date::text, base, currency, rate::float8, source, to_char(fetched_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS fetched_at FROM daily_rates WHERE base = ${base} AND date = (SELECT max(date) FROM daily_rates WHERE base = ${base}) ORDER BY currency`
     return snapshot(rows as unknown as RateRow[])
   }
 
@@ -63,13 +63,13 @@ export function createRateDatabase(sql: Sql): RateDatabase {
     getHistorical: (date, base) => find(base, date),
     async getPairHistory(from, to) {
       if (from === 'EUR') {
-        const rows = await sql`SELECT date::text, rate::float8 FROM daily_rates WHERE base = 'EUR' AND currency = ${to} ORDER BY date ASC`
+        const rows = await sql`SELECT date::text, rate::float8 FROM daily_rates WHERE base = 'EUR' AND currency = ${to} ORDER BY date DESC LIMIT 5000`
         return rows as unknown as PairRateRow[]
       }
-      const exact = await sql`SELECT date::text, rate::float8 FROM daily_rates WHERE base = ${from} AND currency = ${to} ORDER BY date ASC`
+       const exact = await sql`SELECT date::text, rate::float8 FROM daily_rates WHERE base = ${from} AND currency = ${to} ORDER BY date DESC LIMIT 5000`
       // Always derive the EUR-based series too, then merge: exact rows win on
       // duplicate dates (fresher source), derived rows fill the history gap.
-      const eur = await sql`SELECT date::text, currency, rate::float8 FROM daily_rates WHERE base = 'EUR' AND currency IN (${from}, ${to}) ORDER BY date ASC`
+       const eur = await sql`SELECT date::text, currency, rate::float8 FROM daily_rates WHERE base = 'EUR' AND currency IN (${from}, ${to}) ORDER BY date DESC LIMIT 10000`
       const byDate = new Map<string, number>()
       const byDateExact = new Map<string, number>()
       for (const row of exact as unknown as Array<{ date: string; rate: number }>) byDateExact.set(row.date, row.rate)
@@ -110,7 +110,7 @@ let sql: Sql | null | undefined
 export function getSql(): Sql | null {
   if (sql !== undefined) return sql
   const url = readEnv('DATABASE_URL')
-  sql = url ? postgres(url, { max: 1 }) : null
+  sql = url ? postgres(url, { max: 5, connect_timeout: 5, idle_timeout: 20 }) : null
   return sql
 }
 

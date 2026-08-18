@@ -8,7 +8,7 @@ export default createRoute(async (c) => {
   try {
     const snapshot = await getLatest('USD')
     const codes = Object.keys(snapshot.rates).sort()
-    return json(c, {
+    return await json(c, {
       currencies: codes.map((code) => ({ code, decimals: zeroDecimalCurrencies.has(code) ? 0 : 2 })),
       source: snapshot.source,
       fetched_at: snapshot.fetched_at,

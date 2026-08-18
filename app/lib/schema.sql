@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS daily_rates (
   PRIMARY KEY (date, base, currency)
 );
 
-CREATE INDEX IF NOT EXISTS daily_rates_date_base_idx ON daily_rates (date, base);
+CREATE INDEX IF NOT EXISTS daily_rates_base_currency_date_idx ON daily_rates (base, currency, date);
 CREATE INDEX IF NOT EXISTS daily_rates_currency_date_idx ON daily_rates (currency, date);
 
 CREATE TABLE IF NOT EXISTS rate_updates (

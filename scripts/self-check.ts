@@ -134,7 +134,7 @@ assert.equal(dbFetches, 1) // fresh stored row: no source call
 dbNow = new Date('2026-08-16T02:00:00Z')
 assert.equal((await dbService.getLatest('USD')).rates.EUR, 1)
 assert.equal(dbFetches, 2) // stale stored row: refreshed and upserted
-assert.equal(fakeDb.upsertCount, 2)
+assert.equal(fakeDb.upsertCount, 0) // non-EUR derived snapshots are not persisted
 
 dbNow = new Date('2026-08-16T04:00:00Z')
 dbSourceDown = true

@@ -32,6 +32,7 @@ const apiRateLimit: MiddlewareHandler = async (c, next) => {
   const result = limiter.check(clientIp(c.req.raw.headers))
   c.header('X-RateLimit-Limit', String(API_RATE_LIMIT))
   c.header('X-RateLimit-Remaining', String(result.remaining))
+  c.header('X-RateLimit-Reset', String(Math.ceil(Date.now() / 1000) + result.retryAfter))
   if (!result.allowed) {
     c.header('Retry-After', String(result.retryAfter))
     return c.json({ error: 'rate_limited', message: 'Too many requests', details: { retry_after_seconds: result.retryAfter } }, 429)
@@ -40,4 +41,4 @@ const apiRateLimit: MiddlewareHandler = async (c, next) => {
 }
 
 // CORS first: OPTIONS preflights short-circuit before telemetry runs.
-export default [cors, apiRateLimit, apiTelemetry] satisfies Array<MiddlewareHandler>
+export default [cors, apiTelemetry, apiRateLimit] satisfies Array<MiddlewareHandler>
