@@ -36,7 +36,11 @@ const scheduled: ExportedHandlerScheduledHandler = async (event) => {
     return
   }
   const result = await runDailyRateFetch()
-  if (result.status === 'error') console.error('daily rate fetch failed:', result.error)
+  if (result.status === 'error') {
+    console.error(JSON.stringify({ event: 'daily_rate_fetch_failed', error: result.error, fetched_at: result.fetched_at }))
+    const webhook = process.env.ALERT_WEBHOOK_URL
+    if (webhook) await globalThis.fetch(webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'daily_rate_fetch_failed', error: result.error, fetched_at: result.fetched_at }), signal: AbortSignal.timeout(3_000) }).catch(() => undefined)
+  }
 }
 
 // Daily refresh of the reference rates plus hourly telemetry rollup. Under Bun

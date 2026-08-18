@@ -68,6 +68,7 @@ OpenAPI 3.1 specification: [`public/openapi.yaml`](public/openapi.yaml). The int
 | `GET /api/batch-convert` | Convert one amount to multiple currencies | `/api/batch-convert?from=USD&to=EUR,GBP,JPY&amount=100` |
 | `GET /api/metadata` | Currency names, regions, flags, and symbols | `/api/metadata` |
 | `GET /api/coverage` | Dataset date range, sources, and refresh schedule | `/api/coverage` |
+| `GET /api/metrics` | Service and cache counters for monitoring | `/api/metrics` |
 
 All query strings are validated with zod; errors return structured `{ error, message, details }` bodies. Full parameter reference and semantics: the [/docs](http://localhost:5173/docs) page served by the app itself.
 

@@ -61,6 +61,7 @@ const extraEndpoints: Array<{ method: string; path: string; title: string; descr
   { method: 'GET', path: '/api/metadata', title: 'Currency metadata', description: 'Return names, countries, flags, and symbols for currency codes.', example: '/api/metadata' },
   { method: 'GET', path: '/api/coverage', title: 'Coverage', description: 'Return earliest/latest stored dates, data sources, and refresh schedule.', example: '/api/coverage' },
   { method: 'GET', path: '/api/backtest?from=USD&to=EUR', title: 'Forecast backtest', description: 'Return rolling forecast point count and mean absolute error for a pair.', example: '/api/backtest?from=USD&to=EUR' },
+  { method: 'GET', path: '/api/metrics', title: 'Metrics', description: 'Return service state and in-process rate cache counters for monitoring.', example: '/api/metrics' },
 ]
 
 export default createRoute((c) => {
