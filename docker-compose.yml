@@ -6,6 +6,9 @@ services:
     restart: unless-stopped
     expose:
       - "3000"
+    networks:
+      - default
+      - dokploy-network
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -21,6 +24,8 @@ services:
   db:
     image: postgres:17-alpine
     restart: unless-stopped
+    networks:
+      - default
     environment:
       POSTGRES_DB: exchange_io
       POSTGRES_USER: exchange_io
@@ -33,6 +38,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+networks:
+  dokploy-network:
+    external: true
 
 volumes:
   postgres-data:
