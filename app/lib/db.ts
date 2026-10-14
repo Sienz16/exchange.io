@@ -1,5 +1,6 @@
 import postgres from 'postgres'
 import { readEnv } from './env'
+import { SCHEMA_SQL } from './schema'
 import type { RateSnapshot } from './types'
 
 export type RateRow = { date: string; base: string; currency: string; rate: number; source: string; fetched_at: string }
@@ -138,11 +139,25 @@ export async function getCoverage(): Promise<{ earliest_date: string | null; lat
   return { earliest_date: row?.earliest_date ?? null, latest_date: row?.latest_date ?? null, sources: row?.sources ?? [], refresh: 'daily at 00:30 UTC' }
 }
 
+let schemaInitialized = false
+export async function ensureSchema(instance: Sql = getSql()!): Promise<void> {
+  if (!instance || schemaInitialized) return
+  try {
+    await instance.unsafe(SCHEMA_SQL)
+    schemaInitialized = true
+  } catch (error) {
+    console.error('database schema auto-migration failed:', error)
+  }
+}
+
 let sql: Sql | null | undefined
 export function getSql(): Sql | null {
   if (sql !== undefined) return sql
   const url = readEnv('DATABASE_URL')
   sql = url ? postgres(url, { max: 5, connect_timeout: 5, idle_timeout: 20 }) : null
+  if (sql) {
+    void ensureSchema(sql)
+  }
   return sql
 }
 
@@ -162,6 +177,7 @@ export async function checkDatabase(): Promise<boolean> {
   const instance = getSql()
   if (!instance) return true
   try {
+    await ensureSchema(instance)
     await Promise.race([
       instance`SELECT 1`,
       new Promise<never>((_, reject) => setTimeout(() => reject(new Error('database health probe timed out')), 3_000)),

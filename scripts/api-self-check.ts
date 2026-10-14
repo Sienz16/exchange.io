@@ -8,7 +8,7 @@ const server = spawn('bun', ['run', 'dev', '--host', '127.0.0.1', '--port', Stri
 const baseUrl = `http://127.0.0.1:${port}`
 
 try {
-  for (let attempt = 0; attempt < 30; attempt++) {
+  for (let attempt = 0; attempt < 60; attempt++) {
     try {
       await fetch(`${baseUrl}/api/health`)
       break
