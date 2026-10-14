@@ -51,6 +51,7 @@ const scheduled: ExportedHandlerScheduledHandler = async (event) => {
 type BunCron = { cron: (schedule: string, callback: () => void | Promise<void>) => void }
 const runtime = globalThis as typeof globalThis & { Bun?: Partial<BunCron> }
 if (typeof runtime.Bun?.cron === 'function' && readEnv('NODE_ENV') !== 'development') {
+  void runDailyRateFetch()
   runtime.Bun.cron('30 0 * * *', async () => { await runDailyRateFetch() })
   runtime.Bun.cron(ROLLUP_CRON, () => { void runRollup() })
 }

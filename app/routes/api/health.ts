@@ -20,7 +20,7 @@ export default createRoute(async (c) => {
       name: 'ecb.europa.eu',
        database: databaseConfigured ? (databaseHealthy ? 'healthy' : 'unavailable') : 'disabled',
      },
-  }, status === 'ok' ? 200 : 503)
+  }, status === 'unavailable' ? 503 : 200)
   response.headers.set('Cache-Control', 'no-store')
   return response
 })
